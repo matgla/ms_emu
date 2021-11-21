@@ -58,7 +58,10 @@ int main(int argc, const char* argv[])
     printf("8086 emulator starting\n");
     msemu::Memory<1024 * 128> memory;
     if (argc < 2)
+    {
+        printf("Please provide binary file\n");
         return 0;
+    }
     memory.load_from_file(argv[1]);
 
     msemu::Cpu8086 cpu(memory);

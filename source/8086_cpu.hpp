@@ -30,42 +30,29 @@ class Cpu8086
     {
         union
         {
-            union
+            struct
             {
                 struct
                 {
-                    uint8_t al;
-                    uint8_t ah;
-                } a_base;
-                uint16_t ax; // primary accumulator
-            };
-            union
-            {
+                    uint8_t l;
+                    uint8_t h;
+                } ax; // primary accumulator
                 struct
                 {
-                    uint8_t bl;
-                    uint8_t bh;
-                } b_base;
-                uint16_t bx; // base accumulator
-            };
-            union
-            {
+                    uint8_t l;
+                    uint8_t h;
+                } bx;
                 struct
                 {
-                    uint8_t cl;
-                    uint8_t ch;
-                } c_base;
-                uint16_t cx; // counter accumulator
-            };
-            union
-            {
+                    uint8_t l;
+                    uint8_t h;
+                } cx;
                 struct
                 {
-                    uint8_t dl;
-                    uint8_t dh;
-                } d_base;
-                uint16_t dx; // extended accumulator
-            };
+                    uint8_t l;
+                    uint8_t h;
+                } dx;
+            } acc;
             uint16_t regs_16[4];
             uint8_t regs_8[8];
         };

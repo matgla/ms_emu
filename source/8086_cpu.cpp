@@ -35,6 +35,10 @@ void Cpu8086::reset()
 Cpu8086::Cpu8086(MemoryBase& memory)
     : memory_(memory)
 {
+    for (uint16_t i = 0; i <= 255; ++i)
+    {
+        set_opcode(static_cast<uint8_t>(i), &Cpu8086::_unimpl, "-", 0);
+    }
     set_opcode(0x00, &Cpu8086::_unimpl, "add", 2);
 
     // mov group
@@ -90,13 +94,14 @@ void Cpu8086::_unimpl()
     printf("Opcode: 0x%x [%s] is unimplemented!\n", regs_.ip, op_->name);
 }
 
-void puts_many(const char* str, std::size_t times)
+void puts_many(const char* str, std::size_t times, bool newline = true)
 {
     for (std::size_t i = 0; i < times; ++i)
     {
         fputs(str, stdout);
     }
-    puts("");
+    if (newline)
+        puts("");
 }
 void Cpu8086::dump() const
 {
@@ -104,18 +109,30 @@ void Cpu8086::dump() const
 
     printf(clear_screen);
     const char* horizontal = "\u2500";
+    const char* left_top   = "\u250c";
+    const char* right_top  = "\u2510";
+    const char* cross_top  = "\u252c";
+    const char* vertical   = "\u2503";
     printf("P: %s\n", horizontal);
     printf("\n");
     printf("Current instruction: %x %s\n", regs_.ip, op_->name);
-    puts_many(horizontal, 50);
-    printf("|  Reg  H  L    |    Segments    |   Pointers    |\n");
-    printf("|    A  %-2x %-2x   |    SS: %-4x    |   SP: %-4x    |\n", regs_.a_base.ah, regs_.a_base.al,
+    puts_many(left_top, 1, false);
+    puts_many(horizontal, 15, false);
+    puts_many(cross_top, 1, false);
+    puts_many(horizontal, 15, false);
+    puts_many(cross_top, 1, false);
+    puts_many(horizontal, 15, false);
+    puts_many(right_top, 1);
+
+    puts_many(vertical, 1, false);
+    printf("  Reg  H  L    |    Segments    |   Pointers    |\n");
+    printf("|    A  %-2x %-2x   |    SS: %-4x    |   SP: %-4x    |\n", regs_.acc.ax.h, regs_.acc.ax.l,
            regs_.ss, regs_.sp);
-    printf("|    B  %-2x %-2x   |    DS: %-4x    |   BP: %-4x    |\n", regs_.b_base.bh, regs_.b_base.bl,
+    printf("|    B  %-2x %-2x   |    DS: %-4x    |   BP: %-4x    |\n", regs_.acc.bx.h, regs_.acc.bx.l,
            regs_.ds, regs_.bp);
-    printf("|    C  %-2x %-2x   |    ES: %-4x    |   SI: %-4x    |\n", regs_.c_base.ch, regs_.c_base.cl,
+    printf("|    C  %-2x %-2x   |    ES: %-4x    |   SI: %-4x    |\n", regs_.acc.cx.h, regs_.acc.cx.l,
            regs_.es, regs_.si);
-    printf("|    D  %-2x %-2x   |                |   DI: %-4x    |\n", regs_.d_base.dh, regs_.d_base.dl,
+    printf("|    D  %-2x %-2x   |                |   DI: %-4x    |\n", regs_.acc.dx.h, regs_.acc.dx.l,
            regs_.di);
     printf("--------------------- FLAGS ----------------------\n");
     printf("|   OF   DF   IF   TF   SF   ZF   AF   PF   CF   |\n");
