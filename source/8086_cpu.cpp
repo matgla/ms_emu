@@ -51,16 +51,20 @@ Cpu8086::Cpu8086(MemoryBase& memory)
     set_opcode(0xb6, &Cpu8086::_mov8_to_reg<dh_offset>, "mov", 2);
     set_opcode(0xb7, &Cpu8086::_mov8_to_reg<bh_offset>, "mov", 2);
 
-    set_opcode(0xb8, &Cpu8086::_mov8_to_reg<al_offset>, "mov", 3);
-    set_opcode(0xb9, &Cpu8086::_mov8_to_reg<cl_offset>, "mov", 3);
-    set_opcode(0xba, &Cpu8086::_mov8_to_reg<dl_offset>, "mov", 3);
-    set_opcode(0xbb, &Cpu8086::_mov8_to_reg<bl_offset>, "mov", 3);
-    set_opcode(0xbc, &Cpu8086::_mov8_to_reg<ah_offset>, "mov", 3);
-    set_opcode(0xbd, &Cpu8086::_mov8_to_reg<ch_offset>, "mov", 3);
-    set_opcode(0xbe, &Cpu8086::_mov8_to_reg<dh_offset>, "mov", 3);
-    set_opcode(0xbf, &Cpu8086::_mov8_to_reg<bh_offset>, "mov", 3);
+    set_opcode(0xb8, &Cpu8086::_mov16_to_reg<ax_offset>, "mov", 3);
+    set_opcode(0xb9, &Cpu8086::_unimpl, "mov", 3);
+    set_opcode(0xba, &Cpu8086::_unimpl, "mov", 3);
+    set_opcode(0xbb, &Cpu8086::_unimpl, "mov", 3);
+    set_opcode(0xbc, &Cpu8086::_unimpl, "mov", 3);
+    set_opcode(0xbd, &Cpu8086::_unimpl, "mov", 3);
+    set_opcode(0xbe, &Cpu8086::_unimpl, "mov", 3);
+    set_opcode(0xbf, &Cpu8086::_unimpl, "mov", 3);
 
-    set_opcode(0x8e, &Cpu8086::_mov8_to_reg<al_offset>, "mov", 2);
+    set_opcode(0x89, &Cpu8086::_unimpl, "mov", 2);
+    set_opcode(0x8e, &Cpu8086::_unimpl, "mov", 2);
+
+    // ret
+    set_opcode(0xc3, &Cpu8086::_unimpl, "ret", 1);
 
 
     reset();
@@ -128,6 +132,8 @@ constexpr const char* vertical         = "\u2502";
 constexpr const char* left_top_bottom  = "\u251c";
 constexpr const char* left_top_right   = "\u2534";
 constexpr const char* right_top_bottom = "\u2524";
+
+
 void print_table_top(std::size_t columns, std::size_t size, bool newline = true)
 {
     puts_many(left_top, 1, false);
@@ -175,11 +181,27 @@ void print_table_row(std::size_t columns, size_t size, const T& data, bool newli
     puts_many("", 1, newline);
 }
 
-void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uint8_t data[2])
+constexpr uint8_t get_mod(uint8_t byte)
 {
+    return (byte >> 6) & 0x03;
+}
+
+constexpr uint8_t get_rm(uint8_t byte)
+{
+    return byte & 0x07;
+}
+
+constexpr uint8_t get_reg_op(uint8_t byte)
+{
+    return (byte >> 3) & 0x07;
+}
+
+void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uint8_t* data)
+{
+    char mod0_mapping[8][9]  = {"[bx+si]", "[bx+di]", "[bp+si]", "[bp+di]", "[si]", "[di]", "disp16", "[bx]"};
     char reg8_mapping[8][3]  = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
     char reg16_mapping[8][3] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
-
+    char sreg_mapping[4][3]  = {"es", "cs", "ss", "ds"};
     switch (opcode)
     {
         case 0x48:
@@ -192,6 +214,25 @@ void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uin
         case 0x4f:
         {
             snprintf(line, max_size, "dec %s", reg16_mapping[(opcode & 0xf) - 8]);
+        }
+        break;
+        case 0x89:
+        {
+            uint8_t regop = get_reg_op(data[0]);
+            uint8_t reg   = get_rm(data[0]);
+            char* address = nullptr;
+            if (get_mod(data[0]) == 0)
+            {
+                address = mod0_mapping[reg];
+            }
+            const char* reg_d = reg16_mapping[regop];
+            snprintf(line, max_size, "mov %s,%s", address, reg_d);
+        }
+        break;
+        case 0x8e:
+        {
+            snprintf(line, max_size, "mov %s,%s", sreg_mapping[get_reg_op(data[0]) & 0x3],
+                     reg16_mapping[get_rm(data[0])]);
         }
         break;
         case 0xb0:
@@ -219,7 +260,11 @@ void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uin
                      data[0]);
         }
         break;
-
+        case 0xc3:
+        {
+            snprintf(line, max_size, "ret");
+        }
+        break;
         case 0xcc:
         case 0xcd:
         {

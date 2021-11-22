@@ -118,6 +118,9 @@ private:
     template <uint8_t reg_offset>
     void _mov8_to_reg();
 
+    template <uint8_t reg_offset>
+    void _mov16_to_reg();
+
     template <uint8_t from, uint8_t to>
     void _mov_from_reg();
 
