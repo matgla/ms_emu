@@ -93,6 +93,7 @@ public:
     void reset();
 
 private:
+    void get_disassembly_line(char* line, std::size_t max_size, std::size_t& program_counter) const;
     void dump() const;
 
     uint8_t read_byte() const;
