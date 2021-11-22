@@ -23,39 +23,62 @@
 
 namespace msemu
 {
+enum class RegisterPart
+{
+    low,
+    high,
+    whole
+};
+
+template <RegisterPart where>
+uint16_t where_mask()
+{
+    if constexpr (where == RegisterPart::low)
+    {
+        return 0xff;
+    }
+    if constexpr (where == RegisterPart::high)
+    {
+        return 0xff00;
+    }
+    return 0xffff;
+}
+
+template <RegisterPart where>
+uint16_t where_offset()
+{
+    if constexpr (where == RegisterPart::low)
+    {
+        return 0;
+    }
+    if constexpr (where == RegisterPart::high)
+    {
+        return 8;
+    }
+    return 0;
+}
+
+template <RegisterPart where>
+void set_register(uint16_t& reg, uint16_t value)
+{
+    reg &= static_cast<uint16_t>(~where_mask<where>());
+    reg |= static_cast<uint16_t>((value >> where_offset<where>()) & where_mask<where>());
+}
+
+template <RegisterPart where>
+uint16_t get_register(uint16_t reg)
+{
+    return static_cast<uint16_t>((reg & where_mask<where>()) >> where_offset<where>());
+}
 
 class Cpu8086
 {
     struct Registers
     {
-        union
-        {
-            struct
-            {
-                struct
-                {
-                    uint8_t l;
-                    uint8_t h;
-                } ax; // primary accumulator
-                struct
-                {
-                    uint8_t l;
-                    uint8_t h;
-                } bx;
-                struct
-                {
-                    uint8_t l;
-                    uint8_t h;
-                } cx;
-                struct
-                {
-                    uint8_t l;
-                    uint8_t h;
-                } dx;
-            } acc;
-            uint16_t regs_16[4];
-            uint8_t regs_8[8];
-        };
+        uint16_t ax;
+        uint16_t bx;
+        uint16_t cx;
+        uint16_t dx;
         uint16_t si; // source index
         uint16_t di; // destination index
         uint16_t bp; // base pointer
@@ -106,20 +129,9 @@ private:
     template <typename T, T* (Cpu8086::*setter)()>
     void _mov();
 
-    constexpr static uint8_t al_offset = 0;
-    constexpr static uint8_t ah_offset = 1;
-    constexpr static uint8_t bl_offset = 2;
-    constexpr static uint8_t bh_offset = 3;
-    constexpr static uint8_t cl_offset = 4;
-    constexpr static uint8_t ch_offset = 5;
-    constexpr static uint8_t dl_offset = 6;
-    constexpr static uint8_t dh_offset = 7;
+    template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
+    void _mov_to_reg();
 
-    template <uint8_t reg_offset>
-    void _mov8_to_reg();
-
-    template <uint8_t reg_offset>
-    void _mov16_to_reg();
 
     template <uint8_t from, uint8_t to>
     void _mov_from_reg();

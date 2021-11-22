@@ -28,7 +28,8 @@ namespace msemu
 class MemoryBase
 {
 public:
-    virtual uint8_t read8(std::size_t address) const = 0;
+    virtual uint8_t read8(std::size_t address) const   = 0;
+    virtual uint16_t read16(std::size_t address) const = 0;
 };
 
 
@@ -56,6 +57,11 @@ public:
     uint8_t read8(std::size_t address) const override
     {
         return memory_[address];
+    }
+
+    uint16_t read16(std::size_t address) const override
+    {
+        return static_cast<uint16_t>(memory_[address] | static_cast<uint16_t>(memory_[address + 1]) << 8);
     }
 
 private:
