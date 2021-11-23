@@ -36,3 +36,9 @@ target_compile_options(msemu_private_flags INTERFACE
 target_link_libraries(msemu_private_flags INTERFACE enable_sanitizers coverage_flags)
 
 add_subdirectory(source)
+
+if (ENABLE_TESTS)
+
+  add_subdirectory(tests)
+
+endif ()

@@ -9,6 +9,14 @@
             "options": {
                 "is_cmake_library": true
             }
+        },
+        {
+            "target": "gtest",
+            "version": "main",
+            "directory": "gtest",
+            "options": {},
+            "type": "git",
+            "link": "https://github.com/google/googletest.git"
         }
     ]
 }

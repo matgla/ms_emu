@@ -62,7 +62,7 @@ template <RegisterPart where>
 void set_register(uint16_t& reg, uint16_t value)
 {
     reg &= static_cast<uint16_t>(~where_mask<where>());
-    reg |= static_cast<uint16_t>((value >> where_offset<where>()) & where_mask<where>());
+    reg |= static_cast<uint16_t>((value << where_offset<where>()) & where_mask<where>());
 }
 
 template <RegisterPart where>
@@ -73,6 +73,7 @@ uint16_t get_register(uint16_t reg)
 
 class Cpu8086
 {
+public:
     struct Registers
     {
         uint16_t ax;
@@ -107,34 +108,40 @@ class Cpu8086
             uint16_t res_6 : 1;
             uint16_t c : 1; // carry
         } flags;
+        uint16_t null;
     };
 
-public:
     Cpu8086(MemoryBase& memory);
 
     void step();
     void reset();
 
-private:
+protected:
+    uint16_t& get_sreg(uint8_t id);
+    uint16_t& get_reg16_from_mod(uint8_t id);
+
     void get_disassembly_line(char* line, std::size_t max_size, std::size_t& program_counter) const;
     void dump() const;
 
     uint8_t read_byte() const;
-    void set_opcode(uint8_t id, void (Cpu8086::*fun)(void), const char* name, uint8_t size);
+    void set_opcode(uint8_t id, uint8_t (Cpu8086::*fun)(void));
 
 
-    void _add();
-    void _unimpl();
-
-    template <typename T, T* (Cpu8086::*setter)()>
-    void _mov();
+    uint8_t _add();
+    uint8_t _unimpl();
 
     template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
-    void _mov_to_reg();
+    uint8_t _mov_to_reg();
 
+    uint8_t _mov_sreg_to_reg();
+    uint8_t _mov_reg_to_sreg();
 
-    template <uint8_t from, uint8_t to>
-    void _mov_from_reg();
+    template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
+    uint8_t _mov_mem_to_reg();
+
+    template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
+    uint8_t _mov_reg_to_mem();
+
 
     struct MoveOperand
     {
@@ -144,14 +151,13 @@ private:
 
     struct Instruction
     {
-        typedef void (Cpu8086::*fun)(void);
-        uint8_t size;
+        typedef uint8_t (Cpu8086::*fun)(void);
         fun impl;
-        const char* name;
     };
 
     Instruction* op_;
     Registers regs_;
+    char error_msg_[100];
     static Instruction opcodes_[255];
     MemoryBase& memory_;
 };

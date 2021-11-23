@@ -21,6 +21,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <span>
 
 namespace msemu
 {
@@ -28,8 +30,11 @@ namespace msemu
 class MemoryBase
 {
 public:
-    virtual uint8_t read8(std::size_t address) const   = 0;
-    virtual uint16_t read16(std::size_t address) const = 0;
+    virtual uint8_t read8(std::size_t address) const                              = 0;
+    virtual uint16_t read16(std::size_t address) const                            = 0;
+    virtual void write8(std::size_t address, uint8_t data)                        = 0;
+    virtual void write16(std::size_t address, uint16_t data)                      = 0;
+    virtual void write(std::size_t address, const std::span<const uint8_t>& data) = 0;
 };
 
 
@@ -61,7 +66,24 @@ public:
 
     uint16_t read16(std::size_t address) const override
     {
-        return static_cast<uint16_t>(memory_[address] | static_cast<uint16_t>(memory_[address + 1]) << 8);
+        uint16_t ret;
+        std::memcpy(&ret, &memory_[address], sizeof(ret));
+        return ret;
+    }
+
+    void write8(std::size_t address, uint8_t data) override
+    {
+        memory_[address] = data;
+    }
+
+    void write16(std::size_t address, uint16_t data) override
+    {
+        std::memcpy(&memory_[address], &data, sizeof(data));
+    }
+
+    void write(std::size_t address, const std::span<const uint8_t>& data) override
+    {
+        std::memcpy(&memory_[address], data.data(), data.size());
     }
 
 private:

@@ -24,6 +24,26 @@
 namespace msemu
 {
 
+namespace
+{
+constexpr uint8_t get_mod(uint8_t byte)
+{
+    return (byte >> 6) & 0x03;
+}
+
+constexpr uint8_t get_rm(uint8_t byte)
+{
+    return byte & 0x07;
+}
+
+constexpr uint8_t get_reg_op(uint8_t byte)
+{
+    return (byte >> 3) & 0x07;
+}
+
+
+} // namespace
+
 Cpu8086::Instruction Cpu8086::opcodes_[255];
 
 void Cpu8086::reset()
@@ -37,31 +57,39 @@ Cpu8086::Cpu8086(MemoryBase& memory)
 {
     for (uint16_t i = 0; i <= 255; ++i)
     {
-        set_opcode(static_cast<uint8_t>(i), &Cpu8086::_unimpl, "-", 1);
+        set_opcode(static_cast<uint8_t>(i), &Cpu8086::_unimpl);
     }
-    set_opcode(0x00, &Cpu8086::_unimpl, "add", 2);
+    set_opcode(0x00, &Cpu8086::_unimpl);
 
     // mov group
-    set_opcode(0xb0, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::ax, RegisterPart::low>, "mov", 2);
-    set_opcode(0xb1, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::cx, RegisterPart::low>, "mov", 2);
-    set_opcode(0xb2, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::dx, RegisterPart::low>, "mov", 2);
-    set_opcode(0xb3, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bx, RegisterPart::low>, "mov", 2);
-    set_opcode(0xb4, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::ax, RegisterPart::high>, "mov", 2);
-    set_opcode(0xb5, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::cx, RegisterPart::high>, "mov", 2);
-    set_opcode(0xb6, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::dx, RegisterPart::high>, "mov", 2);
-    set_opcode(0xb7, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bx, RegisterPart::high>, "mov", 2);
+    set_opcode(0xa0, &Cpu8086::_mov_mem_to_reg<&Cpu8086::Registers::ax, RegisterPart::low>);
+    set_opcode(0xa1, &Cpu8086::_mov_mem_to_reg<&Cpu8086::Registers::ax, RegisterPart::whole>);
+    set_opcode(0xa2, &Cpu8086::_mov_reg_to_mem<&Cpu8086::Registers::ax, RegisterPart::low>);
+    set_opcode(0xa3, &Cpu8086::_mov_reg_to_mem<&Cpu8086::Registers::ax, RegisterPart::whole>);
 
-    set_opcode(0xb8, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::ax, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xb9, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::cx, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xba, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::dx, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xbb, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bx, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xbc, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::sp, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xbd, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bp, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xbe, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::si, RegisterPart::whole>, "mov", 3);
-    set_opcode(0xbf, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::di, RegisterPart::whole>, "mov", 3);
 
-    set_opcode(0x8e, &Cpu8086::_unimpl, "mov", 2);
+    set_opcode(0xb0, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::ax, RegisterPart::low>);
+    set_opcode(0xb1, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::cx, RegisterPart::low>);
+    set_opcode(0xb2, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::dx, RegisterPart::low>);
+    set_opcode(0xb3, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bx, RegisterPart::low>);
+    set_opcode(0xb4, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::ax, RegisterPart::high>);
+    set_opcode(0xb5, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::cx, RegisterPart::high>);
+    set_opcode(0xb6, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::dx, RegisterPart::high>);
+    set_opcode(0xb7, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bx, RegisterPart::high>);
 
+    set_opcode(0xb8, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::ax, RegisterPart::whole>);
+    set_opcode(0xb9, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::cx, RegisterPart::whole>);
+    set_opcode(0xba, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::dx, RegisterPart::whole>);
+    set_opcode(0xbb, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bx, RegisterPart::whole>);
+    set_opcode(0xbc, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::sp, RegisterPart::whole>);
+    set_opcode(0xbd, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::bp, RegisterPart::whole>);
+    set_opcode(0xbe, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::si, RegisterPart::whole>);
+    set_opcode(0xbf, &Cpu8086::_mov_to_reg<&Cpu8086::Registers::di, RegisterPart::whole>);
+
+    // set_opcode(0x89, &Cpu8086::_mov_, 2);
+    set_opcode(0x8c, &Cpu8086::_mov_sreg_to_reg);
+    set_opcode(0x8e, &Cpu8086::_mov_reg_to_sreg);
+    set_opcode(0xc3, &Cpu8086::_unimpl);
 
     reset();
 #ifdef DUMP_CORE_STATE
@@ -69,11 +97,9 @@ Cpu8086::Cpu8086(MemoryBase& memory)
 #endif
 }
 
-void Cpu8086::set_opcode(uint8_t id, void (Cpu8086::*fun)(), const char* name, uint8_t size)
+void Cpu8086::set_opcode(uint8_t id, uint8_t (Cpu8086::*fun)())
 {
-    opcodes_[id].size = size;
     opcodes_[id].impl = fun;
-    opcodes_[id].name = name;
 }
 
 uint8_t Cpu8086::read_byte() const
@@ -83,19 +109,89 @@ uint8_t Cpu8086::read_byte() const
 
 void Cpu8086::step()
 {
-    op_ = &opcodes_[memory_.read8(regs_.ip)];
-    (this->*op_->impl)();
+    op_          = &opcodes_[memory_.read8(regs_.ip)];
+    uint8_t size = (this->*op_->impl)();
+    regs_.ip += size;
 #ifdef DUMP_CORE_STATE
     dump();
 #endif
 }
 
-void Cpu8086::_add()
+uint8_t Cpu8086::_add()
 {
+    return 1;
+}
+
+uint16_t& Cpu8086::get_sreg(uint8_t id)
+{
+    switch (id)
+    {
+        case 0:
+            return regs_.es;
+        case 1:
+            return regs_.cs;
+        case 2:
+            return regs_.ss;
+        case 3:
+            return regs_.ds;
+    }
+
+    return regs_.null;
+}
+uint16_t& Cpu8086::get_reg16_from_mod(uint8_t id)
+{
+    switch (id)
+    {
+        case 0:
+            return regs_.ax;
+        case 1:
+            return regs_.cx;
+        case 2:
+            return regs_.dx;
+        case 3:
+            return regs_.bx;
+        case 4:
+            return regs_.sp;
+        case 5:
+            return regs_.bp;
+        case 6:
+            return regs_.si;
+        case 7:
+            return regs_.di;
+    }
+
+    return regs_.null;
+}
+
+
+uint8_t Cpu8086::_mov_reg_to_sreg()
+{
+    uint8_t data = memory_.read8(regs_.ip + 1);
+    if (get_mod(data) == 0x3)
+    {
+        uint8_t sreg = get_reg_op(data) & 0x3;
+        uint8_t reg  = get_rm(data);
+
+        get_sreg(sreg) = get_reg16_from_mod(reg);
+    }
+    return 1;
+}
+
+uint8_t Cpu8086::_mov_sreg_to_reg()
+{
+    uint8_t data = memory_.read8(regs_.ip + 1);
+    if (get_mod(data) == 0x3)
+    {
+        uint8_t sreg = get_reg_op(data) & 0x3;
+        uint8_t reg  = get_rm(data);
+
+        get_reg16_from_mod(reg) = get_sreg(sreg);
+    }
+    return 3;
 }
 
 template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
-void Cpu8086::_mov_to_reg()
+uint8_t Cpu8086::_mov_to_reg()
 {
     uint16_t data;
     if constexpr (part == RegisterPart::whole)
@@ -108,13 +204,45 @@ void Cpu8086::_mov_to_reg()
     }
 
     set_register<part>(regs_.*reg, data);
-
-    regs_.ip += op_->size;
+    return 3;
 }
 
-void Cpu8086::_unimpl()
+
+template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
+uint8_t Cpu8086::_mov_mem_to_reg()
 {
-    printf("Opcode: 0x%x [%s] is unimplemented!\n", regs_.ip, op_->name);
+    const uint16_t address = memory_.read16(regs_.ip + 1);
+    if constexpr (part == RegisterPart::whole)
+    {
+        set_register<part>(regs_.*reg, memory_.read16(address));
+    }
+    else
+    {
+        set_register<part>(regs_.*reg, memory_.read8(address));
+    }
+    return 3;
+}
+
+template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
+uint8_t Cpu8086::_mov_reg_to_mem()
+{
+    const uint16_t address = memory_.read16(regs_.ip + 1);
+    if constexpr (part == RegisterPart::whole)
+    {
+        memory_.write16(address, get_register<part>(regs_.*reg));
+    }
+    else
+    {
+        memory_.write8(address, static_cast<uint8_t>(get_register<part>(regs_.*reg)));
+    }
+    return 3;
+}
+
+
+uint8_t Cpu8086::_unimpl()
+{
+    snprintf(error_msg_, sizeof(error_msg_), "Opcode: 0x%x is unimplemented!\n", memory_.read8(regs_.ip));
+    return 1;
 }
 
 void puts_many(const char* str, std::size_t times, bool newline = true)
@@ -186,11 +314,12 @@ void print_table_row(std::size_t columns, size_t size, const T& data, bool newli
     puts_many("", 1, newline);
 }
 
-void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uint8_t data[2])
+uint8_t opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uint8_t data[2])
 {
+    char mod0_mapping[8][9]  = {"[bx+si]", "[bx+di]", "[bp+si]", "[bp+di]", "[si]", "[di]", "disp16", "[bx]"};
     char reg8_mapping[8][3]  = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
     char reg16_mapping[8][3] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
-
+    char sreg_mapping[4][3]  = {"es", "cs", "ss", "ds"};
     switch (opcode)
     {
         case 0x48:
@@ -205,9 +334,23 @@ void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uin
             snprintf(line, max_size, "dec %s", reg16_mapping[(opcode & 0xf) - 8]);
         }
         break;
+        case 0x89:
+        {
+            uint8_t regop = get_reg_op(data[0]);
+            uint8_t reg   = get_rm(data[0]);
+            char* address = nullptr;
+            if (get_mod(data[0]) == 0)
+            {
+                address = mod0_mapping[reg];
+            }
+            const char* reg_d = reg16_mapping[regop];
+            snprintf(line, max_size, "mov %s,%s", address, reg_d);
+        }
+        break;
         case 0x8e:
         {
-            snprintf(line, max_size, "mov %s,0x%02x", reg8_mapping[opcode & 0xf], data[0]);
+            snprintf(line, max_size, "mov %s,%s", sreg_mapping[get_reg_op(data[0]) & 0x3],
+                     reg16_mapping[get_rm(data[0])]);
         }
         break;
         case 0xb0:
@@ -235,7 +378,11 @@ void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uin
                      data[0]);
         }
         break;
-
+        case 0xc3:
+        {
+            snprintf(line, max_size, "ret");
+        }
+        break;
         case 0xcc:
         case 0xcd:
         {
@@ -247,23 +394,21 @@ void opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uin
             snprintf(line, max_size, "- - -");
         }
     }
+    return 1;
 }
 
 void Cpu8086::get_disassembly_line(char* line, std::size_t max_size, std::size_t& program_counter) const
 {
     uint8_t pc = memory_.read8(program_counter);
 
-    uint8_t size = opcodes_[pc].size;
-
-
-    uint8_t data[2] = {};
-    for (uint8_t i = 1; i < size; ++i)
+    uint8_t data[6] = {};
+    for (uint8_t i = 1; i < sizeof(data); ++i)
     {
         data[i - 1] = memory_.read8(program_counter + i);
     }
 
     char command[30];
-    opcode_to_command(command, sizeof(command), pc, data);
+    uint8_t size = opcode_to_command(command, sizeof(command), pc, data);
 
     std::memset(line, 0, max_size);
     char cursor;
@@ -289,7 +434,7 @@ void Cpu8086::get_disassembly_line(char* line, std::size_t max_size, std::size_t
         snprintf(line, max_size, " %c %8lx: %02x %02x %02x  | %s", cursor, program_counter, pc, data[0],
                  data[1], command);
     }
-    &program_counter += size;
+    program_counter += size;
 }
 
 void Cpu8086::dump() const
@@ -297,8 +442,7 @@ void Cpu8086::dump() const
     constexpr const char* clear_screen = "\033[H\033[2J\033[3J";
 
     printf(clear_screen);
-    printf("P: %s\n", horizontal);
-    printf("\n");
+    printf("IP: %x\n", regs_.ip);
 
     print_table_top(3, 15, false);
     char disasm[255];
@@ -347,6 +491,7 @@ void Cpu8086::dump() const
     sprintf(line[0], "D  %-2x %-2x", get_register<RegisterPart::high>(regs_.dx),
             get_register<RegisterPart::low>(regs_.dx));
     std::memset(line[1], 0, sizeof(line[1]));
+    sprintf(line[1], "CS: %-4x", regs_.cs);
     sprintf(line[2], "DI: %-4x", regs_.di);
     print_table_row(3, 15, line, false);
 
@@ -381,6 +526,11 @@ void Cpu8086::dump() const
     printf("%s\n", disasm);
 
     print_table_bottom(0, 47);
+
+    if (strlen(error_msg_))
+    {
+        printf("ERROR: %s\n", error_msg_);
+    }
 }
 
 } // namespace msemu
