@@ -64,7 +64,7 @@ int main(int argc, const char* argv[])
     }
     memory.load_from_file(argv[1]);
 
-    msemu::Cpu8086 cpu(memory);
+    msemu::cpu8086::Cpu cpu(memory);
 
     disable_buffered_io();
     setlocale(LC_CTYPE, "");

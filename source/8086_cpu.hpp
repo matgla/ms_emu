@@ -19,99 +19,17 @@
 
 #include <cstdint>
 
+#include "8086_registers.hpp"
 #include "memory.hpp"
 
 namespace msemu
 {
-enum class RegisterPart
+namespace cpu8086
 {
-    low,
-    high,
-    whole
-};
-
-template <RegisterPart where>
-uint16_t where_mask()
-{
-    if constexpr (where == RegisterPart::low)
-    {
-        return 0xff;
-    }
-    if constexpr (where == RegisterPart::high)
-    {
-        return 0xff00;
-    }
-    return 0xffff;
-}
-
-template <RegisterPart where>
-uint16_t where_offset()
-{
-    if constexpr (where == RegisterPart::low)
-    {
-        return 0;
-    }
-    if constexpr (where == RegisterPart::high)
-    {
-        return 8;
-    }
-    return 0;
-}
-
-template <RegisterPart where>
-void set_register(uint16_t& reg, uint16_t value)
-{
-    reg &= static_cast<uint16_t>(~where_mask<where>());
-    reg |= static_cast<uint16_t>((value << where_offset<where>()) & where_mask<where>());
-}
-
-template <RegisterPart where>
-uint16_t get_register(uint16_t reg)
-{
-    return static_cast<uint16_t>((reg & where_mask<where>()) >> where_offset<where>());
-}
-
-class Cpu8086
+class Cpu
 {
 public:
-    struct Registers
-    {
-        uint16_t ax;
-        uint16_t bx;
-        uint16_t cx;
-        uint16_t dx;
-        uint16_t si; // source index
-        uint16_t di; // destination index
-        uint16_t bp; // base pointer
-        uint16_t sp; // stack pointer
-        uint16_t ip; // instruction pointer
-        uint16_t cs; // code segment
-        uint16_t ds; // data segment
-        uint16_t es; // extra segment
-        uint16_t ss; // stack segment
-        struct
-        {
-            uint16_t res_0 : 1;
-            uint16_t res_1 : 1;
-            uint16_t res_2 : 1;
-            uint16_t res_3 : 1;
-            uint16_t o : 1; // overflow
-            uint16_t d : 1; // direction
-            uint16_t i : 1; // interrupt
-            uint16_t t : 1; // trap
-            uint16_t s : 1; // sign
-            uint16_t z : 1; // zero
-            uint16_t res_4 : 1;
-            uint16_t a : 1; // adjust
-            uint16_t res_5 : 1;
-            uint16_t p : 1; // parity
-            uint16_t res_6 : 1;
-            uint16_t c : 1; // carry
-        } flags;
-        uint16_t null;
-    };
-
-    Cpu8086(MemoryBase& memory);
+    Cpu(MemoryBase& memory);
 
     void step();
     void reset();
@@ -120,26 +38,28 @@ protected:
     uint16_t& get_sreg(uint8_t id);
     uint16_t& get_reg16_from_mod(uint8_t id);
 
-    void get_disassembly_line(char* line, std::size_t max_size, std::size_t& program_counter) const;
+    void get_disassembly_line(char* line, std::size_t max_size,
+                              std::size_t& program_counter) const;
     void dump() const;
 
     uint8_t read_byte() const;
-    void set_opcode(uint8_t id, uint8_t (Cpu8086::*fun)(void));
+    void set_opcode(uint8_t id, uint8_t (Cpu::*fun)(void));
 
 
     uint8_t _add();
     uint8_t _unimpl();
 
-    template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
-    uint8_t _mov_to_reg();
+    template <uint16_t Registers::*reg, RegisterPart part>
+    uint8_t _mov_imm_to_reg();
+    template <uint16_t Registers::*reg, RegisterPart part>
+    uint8_t _mov_mem_to_reg();
+
+    uint8_t _mov_byte_modmr_to_reg();
 
     uint8_t _mov_sreg_to_reg();
     uint8_t _mov_reg_to_sreg();
 
-    template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
-    uint8_t _mov_mem_to_reg();
-
-    template <uint16_t Cpu8086::Registers::*reg, RegisterPart part>
+    template <uint16_t Registers::*reg, RegisterPart part>
     uint8_t _mov_reg_to_mem();
 
 
@@ -151,7 +71,7 @@ protected:
 
     struct Instruction
     {
-        typedef uint8_t (Cpu8086::*fun)(void);
+        typedef uint8_t (Cpu::*fun)(void);
         fun impl;
     };
 
@@ -162,5 +82,5 @@ protected:
     MemoryBase& memory_;
 };
 
-
+} // namespace cpu8086
 } // namespace msemu

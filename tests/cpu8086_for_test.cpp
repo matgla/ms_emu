@@ -19,15 +19,16 @@
 
 namespace msemu
 {
-
-Cpu8086::Registers& Cpu8086ForTest::get_registers()
+namespace cpu8086
+{
+Registers& CpuForTest::get_registers()
 {
     return regs_;
 }
 
-const Cpu8086::Registers& Cpu8086ForTest::get_registers() const
+const Registers& CpuForTest::get_registers() const
 {
     return regs_;
 }
-
+} // namespace cpu8086
 } // namespace msemu
