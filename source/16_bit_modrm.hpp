@@ -21,19 +21,21 @@
 
 namespace msemu
 {
-
 struct ModRM
 {
     uint8_t mod : 2;
     uint8_t reg : 3;
     uint8_t rm : 3;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
     constexpr ModRM(uint8_t v)
         : mod{static_cast<uint8_t>((v >> 6) & 0x03u)}
         , reg{static_cast<uint8_t>((v >> 3) & 0x07u)}
         , rm{static_cast<uint8_t>(v & 0x07u)}
     {
     }
+#pragma GCC diagnostic pop
 };
 
 } // namespace msemu

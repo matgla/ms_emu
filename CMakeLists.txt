@@ -24,6 +24,8 @@ add_sanitizers()
 include (coverage) 
 add_coverage()
 
+set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_library(msemu_private_flags INTERFACE)
 
 target_compile_options(msemu_private_flags INTERFACE

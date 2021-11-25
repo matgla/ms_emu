@@ -32,6 +32,9 @@ public:
     using Cpu::Cpu;
     const Registers& get_registers() const;
     Registers& get_registers();
+
+    bool has_error() const;
+    std::string get_error() const;
 };
 
 inline bool operator==(const Registers& lhs, const Registers& rhs)

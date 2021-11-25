@@ -30,5 +30,16 @@ const Registers& CpuForTest::get_registers() const
 {
     return regs_;
 }
+
+bool CpuForTest::has_error() const
+{
+    return strlen(error_msg_) > 0;
+}
+
+std::string CpuForTest::get_error() const
+{
+    return error_msg_;
+}
+
 } // namespace cpu8086
 } // namespace msemu

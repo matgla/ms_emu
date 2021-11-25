@@ -24,6 +24,8 @@
 #include "16_bit_modrm.hpp"
 #include "8086_modrm.hpp"
 
+#include <iostream>
+
 namespace msemu
 {
 namespace cpu8086
@@ -87,7 +89,7 @@ Cpu::Cpu(MemoryBase& memory)
     set_opcode(0xbe, &Cpu::_mov_imm_to_reg<&Registers::si, RegisterPart::whole>);
     set_opcode(0xbf, &Cpu::_mov_imm_to_reg<&Registers::di, RegisterPart::whole>);
 
-    set_opcode(0x89, &Cpu::_mov_byte_modmr_to_reg);
+    set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg);
     set_opcode(0x8c, &Cpu::_mov_sreg_to_reg);
     set_opcode(0x8e, &Cpu::_mov_reg_to_sreg);
     set_opcode(0xc3, &Cpu::_unimpl);
@@ -245,32 +247,40 @@ uint8_t Cpu::_mov_reg_to_mem()
 uint8_t Cpu::_mov_byte_modmr_to_reg()
 {
     uint8_t modmr = memory_.read8(regs_.ip + 1);
-
     const ModRM mod(modmr);
-    uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-    uint16_t offset = 0;
-    if (mode == 1)
+    uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    uint16_t offset          = 0;
+    uint8_t instruction_size = 2;
+    if (mode == 0 && mod.rm == 0x06)
     {
-        offset = memory_.read8(regs_.ip + 1);
+        offset           = memory_.read16(regs_.ip + 2);
+        instruction_size = 4;
+    }
+    else if (mode == 1)
+    {
+        offset           = memory_.read8(regs_.ip + 2);
+        instruction_size = 3;
     }
     else if (mode == 2)
     {
-        offset = memory_.read16(regs_.ip + 1);
+        offset           = memory_.read16(regs_.ip + 2);
+        instruction_size = 4;
     }
-    auto from_address = modes.modes[mode][mod.rm](offset);
-    auto to_reg       = modes.reg8[mod.reg];
 
+
+    auto from_address = modes.modes[mode][mod.rm](regs_, offset);
+    auto to_reg       = modes.reg8[mod.reg];
     if (mod.reg > 3)
     {
-
-        set_register<RegisterPart::high>(*(regs_.*to_reg), memory_.read8(from_address));
+        set_register<RegisterPart::high>(regs_.*to_reg, memory_.read8(from_address));
     }
     else
     {
-        set_register<RegisterPart::low>(*(regs_.*to_reg), memory_.read8(from_address));
+        set_register<RegisterPart::low>(regs_.*to_reg, memory_.read8(from_address));
     }
-}
 
+    return instruction_size;
+}
 
 uint8_t Cpu::_unimpl()
 {

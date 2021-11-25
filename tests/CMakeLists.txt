@@ -14,5 +14,11 @@ target_link_libraries(msemu_tests
     PRIVATE 
         msemu_cpu8086 
         gtest_main 
+        gmock
         gtest
+)
+
+target_compile_options(msemu_tests
+    PRIVATE
+    -Wno-missing-field-initializers
 )

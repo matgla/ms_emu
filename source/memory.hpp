@@ -30,11 +30,12 @@ namespace msemu
 class MemoryBase
 {
 public:
-    virtual uint8_t read8(std::size_t address) const                              = 0;
-    virtual uint16_t read16(std::size_t address) const                            = 0;
-    virtual void write8(std::size_t address, uint8_t data)                        = 0;
-    virtual void write16(std::size_t address, uint16_t data)                      = 0;
-    virtual void write(std::size_t address, const std::span<const uint8_t>& data) = 0;
+    virtual void read(std::size_t address, std::span<uint8_t> data)              = 0;
+    virtual uint8_t read8(std::size_t address) const                             = 0;
+    virtual uint16_t read16(std::size_t address) const                           = 0;
+    virtual void write8(std::size_t address, uint8_t data)                       = 0;
+    virtual void write16(std::size_t address, uint16_t data)                     = 0;
+    virtual void write(std::size_t address, const std::span<const uint8_t> data) = 0;
 };
 
 
@@ -81,9 +82,14 @@ public:
         std::memcpy(&memory_[address], &data, sizeof(data));
     }
 
-    void write(std::size_t address, const std::span<const uint8_t>& data) override
+    void write(std::size_t address, const std::span<const uint8_t> data) override
     {
         std::memcpy(&memory_[address], data.data(), data.size());
+    }
+
+    void read(std::size_t address, std::span<uint8_t> data) override
+    {
+        std::memcpy(data.data(), &memory_[address], data.size());
     }
 
 private:
