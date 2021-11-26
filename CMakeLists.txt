@@ -29,7 +29,7 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(msemu_private_flags INTERFACE)
 
 target_compile_options(msemu_private_flags INTERFACE
-    -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion
+    -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion -Weffc++
     $<$<CONFIG:DEBUG>:-Og -g>
     $<$<CONFIG:RELEASE>:-O3>
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++2a>

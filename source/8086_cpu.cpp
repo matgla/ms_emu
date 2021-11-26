@@ -30,7 +30,6 @@ namespace msemu
 {
 namespace cpu8086
 {
-
 constexpr uint8_t get_mod(uint8_t byte)
 {
     return (byte >> 6) & 0x03;
@@ -56,7 +55,11 @@ void Cpu::reset()
 }
 
 Cpu::Cpu(MemoryBase& memory)
-    : memory_(memory)
+    : op_{}
+    , regs_{}
+    , last_instruction_cost_{0}
+    , error_msg_{}
+    , memory_{memory}
 {
     for (uint16_t i = 0; i <= 255; ++i)
     {
@@ -90,6 +93,8 @@ Cpu::Cpu(MemoryBase& memory)
     set_opcode(0xbf, &Cpu::_mov_imm_to_reg<&Registers::di, RegisterPart::whole>);
 
     set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg);
+    set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr);
+
     set_opcode(0x8c, &Cpu::_mov_sreg_to_reg);
     set_opcode(0x8e, &Cpu::_mov_reg_to_sreg);
     set_opcode(0xc3, &Cpu::_unimpl);
@@ -100,7 +105,7 @@ Cpu::Cpu(MemoryBase& memory)
 #endif
 }
 
-void Cpu::set_opcode(uint8_t id, uint8_t (Cpu::*fun)())
+void Cpu::set_opcode(uint8_t id, InstructionCost (Cpu::*fun)())
 {
     opcodes_[id].impl = fun;
 }
@@ -112,9 +117,12 @@ uint8_t Cpu::read_byte() const
 
 void Cpu::step()
 {
-    op_          = &opcodes_[memory_.read8(regs_.ip)];
-    uint8_t size = (this->*op_->impl)();
-    regs_.ip += size;
+    op_                  = &opcodes_[memory_.read8(regs_.ip)];
+    InstructionCost cost = (this->*op_->impl)();
+    regs_.ip += cost.size;
+
+    // TODO: align cycles
+    last_instruction_cost_ = cost.cycles;
 #ifdef DUMP_CORE_STATE
     dump();
 #endif
@@ -169,7 +177,7 @@ uint16_t& Cpu::get_reg16_from_mod(uint8_t id)
 }
 
 
-uint8_t Cpu::_mov_reg_to_sreg()
+InstructionCost Cpu::_mov_reg_to_sreg()
 {
     uint8_t data = memory_.read8(regs_.ip + 1);
     if (get_mod(data) == 0x3)
@@ -179,10 +187,10 @@ uint8_t Cpu::_mov_reg_to_sreg()
 
         get_sreg(sreg) = get_reg16_from_mod(reg);
     }
-    return 1;
+    return {.size = 1, .cycles = 2};
 }
 
-uint8_t Cpu::_mov_sreg_to_reg()
+InstructionCost Cpu::_mov_sreg_to_reg()
 {
     uint8_t data = memory_.read8(regs_.ip + 1);
     if (get_mod(data) == 0x3)
@@ -192,11 +200,11 @@ uint8_t Cpu::_mov_sreg_to_reg()
 
         get_reg16_from_mod(reg) = get_sreg(sreg);
     }
-    return 3;
+    return {.size = 3, .cycles = 2};
 }
 
 template <uint16_t Registers::*reg, RegisterPart part>
-uint8_t Cpu::_mov_imm_to_reg()
+InstructionCost Cpu::_mov_imm_to_reg()
 {
     uint16_t data;
     if constexpr (part == RegisterPart::whole)
@@ -210,12 +218,13 @@ uint8_t Cpu::_mov_imm_to_reg()
 
     set_register<part>(regs_.*reg, data);
 
-    return part == RegisterPart::whole ? 3 : 2;
+    const uint8_t size = part == RegisterPart::whole ? 3 : 2;
+    return {.size = size, .cycles = 4};
 }
 
 
 template <uint16_t Registers::*reg, RegisterPart part>
-uint8_t Cpu::_mov_mem_to_reg()
+InstructionCost Cpu::_mov_mem_to_reg()
 {
     const uint16_t address = memory_.read16(regs_.ip + 1);
     if constexpr (part == RegisterPart::whole)
@@ -226,11 +235,18 @@ uint8_t Cpu::_mov_mem_to_reg()
     {
         set_register<part>(regs_.*reg, memory_.read8(address));
     }
-    return 3;
+    if constexpr (reg == &Registers::ax)
+    {
+        return {.size = 3, .cycles = 10};
+    }
+    else
+    {
+        return {.size = 3, .cycles = 8 + get_cost(AccessCost::Direct)};
+    }
 }
 
 template <uint16_t Registers::*reg, RegisterPart part>
-uint8_t Cpu::_mov_reg_to_mem()
+InstructionCost Cpu::_mov_reg_to_mem()
 {
     const uint16_t address = memory_.read16(regs_.ip + 1);
     if constexpr (part == RegisterPart::whole)
@@ -241,10 +257,17 @@ uint8_t Cpu::_mov_reg_to_mem()
     {
         memory_.write8(address, static_cast<uint8_t>(get_register<part>(regs_.*reg)));
     }
-    return 3;
+    if constexpr (reg == &Registers::ax)
+    {
+        return {.size = 3, .cycles = 10};
+    }
+    else
+    {
+        return {.size = 3, .cycles = 9 + get_cost(AccessCost::Direct)};
+    }
 }
 
-uint8_t Cpu::_mov_byte_modmr_to_reg()
+InstructionCost Cpu::_mov_byte_modmr_to_reg()
 {
     uint8_t modmr = memory_.read8(regs_.ip + 1);
     const ModRM mod(modmr);
@@ -279,14 +302,57 @@ uint8_t Cpu::_mov_byte_modmr_to_reg()
         set_register<RegisterPart::low>(regs_.*to_reg, memory_.read8(from_address));
     }
 
-    return instruction_size;
+    return {.size   = instruction_size,
+            .cycles = static_cast<uint8_t>(8 + modes.costs[mod.mod][mod.rm])};
 }
 
-uint8_t Cpu::_unimpl()
+InstructionCost Cpu::_mov_byte_reg_to_modmr()
+{
+    uint8_t modmr = memory_.read8(regs_.ip + 1);
+    const ModRM mod(modmr);
+    uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    uint16_t offset          = 0;
+    uint8_t instruction_size = 2;
+    if (mode == 0 && mod.rm == 0x06)
+    {
+        offset           = memory_.read16(regs_.ip + 2);
+        instruction_size = 4;
+    }
+    else if (mode == 1)
+    {
+        offset           = memory_.read8(regs_.ip + 2);
+        instruction_size = 3;
+    }
+    else if (mode == 2)
+    {
+        offset           = memory_.read16(regs_.ip + 2);
+        instruction_size = 4;
+    }
+
+
+    auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+    auto from_reg   = modes.reg8[mod.reg];
+    if (mod.reg > 3)
+    {
+        memory_.write8(to_address,
+                       get_register<RegisterPart::high, uint8_t>(regs_.*from_reg));
+    }
+    else
+    {
+        memory_.write8(to_address,
+                       get_register<RegisterPart::low, uint8_t>(regs_.*from_reg));
+    }
+
+    return {.size   = instruction_size,
+            .cycles = static_cast<uint8_t>(9 + modes.costs[mod.mod][mod.rm])};
+}
+
+
+InstructionCost Cpu::_unimpl()
 {
     snprintf(error_msg_, sizeof(error_msg_), "Opcode: 0x%x is unimplemented!\n",
              memory_.read8(regs_.ip));
-    return 1;
+    return {.size = 1, .cycles = 0};
 }
 
 void puts_many(const char* str, std::size_t times, bool newline = true)

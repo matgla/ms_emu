@@ -26,6 +26,13 @@ namespace msemu
 {
 namespace cpu8086
 {
+
+struct InstructionCost
+{
+    uint8_t size;
+    uint8_t cycles;
+};
+
 class Cpu
 {
 public:
@@ -43,24 +50,24 @@ protected:
     void dump() const;
 
     uint8_t read_byte() const;
-    void set_opcode(uint8_t id, uint8_t (Cpu::*fun)(void));
+    void set_opcode(uint8_t id, InstructionCost (Cpu::*fun)(void));
 
 
     uint8_t _add();
-    uint8_t _unimpl();
+    InstructionCost _unimpl();
 
     template <uint16_t Registers::*reg, RegisterPart part>
-    uint8_t _mov_imm_to_reg();
+    InstructionCost _mov_imm_to_reg();
     template <uint16_t Registers::*reg, RegisterPart part>
-    uint8_t _mov_mem_to_reg();
-
-    uint8_t _mov_byte_modmr_to_reg();
-
-    uint8_t _mov_sreg_to_reg();
-    uint8_t _mov_reg_to_sreg();
-
+    InstructionCost _mov_mem_to_reg();
     template <uint16_t Registers::*reg, RegisterPart part>
-    uint8_t _mov_reg_to_mem();
+    InstructionCost _mov_reg_to_mem();
+
+    InstructionCost _mov_byte_reg_to_modmr();
+    InstructionCost _mov_byte_modmr_to_reg();
+
+    InstructionCost _mov_sreg_to_reg();
+    InstructionCost _mov_reg_to_sreg();
 
 
     struct MoveOperand
@@ -71,12 +78,13 @@ protected:
 
     struct Instruction
     {
-        typedef uint8_t (Cpu::*fun)(void);
+        typedef InstructionCost (Cpu::*fun)(void);
         fun impl;
     };
 
     Instruction* op_;
     Registers regs_;
+    uint8_t last_instruction_cost_;
     char error_msg_[100];
     static Instruction opcodes_[255];
     MemoryBase& memory_;

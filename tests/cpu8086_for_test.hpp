@@ -35,6 +35,7 @@ public:
 
     bool has_error() const;
     std::string get_error() const;
+    uint8_t last_instruction_cost() const;
 };
 
 inline bool operator==(const Registers& lhs, const Registers& rhs)

@@ -30,11 +30,12 @@ namespace msemu
 class MemoryBase
 {
 public:
-    virtual void read(std::size_t address, std::span<uint8_t> data)              = 0;
-    virtual uint8_t read8(std::size_t address) const                             = 0;
-    virtual uint16_t read16(std::size_t address) const                           = 0;
-    virtual void write8(std::size_t address, uint8_t data)                       = 0;
-    virtual void write16(std::size_t address, uint16_t data)                     = 0;
+    virtual ~MemoryBase()                                           = default;
+    virtual void read(std::size_t address, std::span<uint8_t> data) = 0;
+    virtual uint8_t read8(std::size_t address) const                = 0;
+    virtual uint16_t read16(std::size_t address) const              = 0;
+    virtual void write8(std::size_t address, uint8_t data)          = 0;
+    virtual void write16(std::size_t address, uint16_t data)        = 0;
     virtual void write(std::size_t address, const std::span<const uint8_t> data) = 0;
 };
 
@@ -43,6 +44,11 @@ template <std::size_t Size>
 class Memory : public MemoryBase
 {
 public:
+    Memory()
+        : memory_{}
+    {
+    }
+
     void load_from_file(const char* file)
     {
         printf("Load file to memory: %s\n", file);

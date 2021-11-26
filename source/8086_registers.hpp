@@ -113,8 +113,8 @@ constexpr inline void set_register(uint16_t& reg, uint16_t value)
     }
 }
 
-template <RegisterPart where>
-constexpr inline uint16_t get_register(uint16_t reg)
+template <RegisterPart where, typename T = uint16_t>
+constexpr inline T get_register(uint16_t reg)
 {
     if constexpr (where == RegisterPart::low)
     {
@@ -124,7 +124,10 @@ constexpr inline uint16_t get_register(uint16_t reg)
     {
         return reinterpret_cast<uint8_t*>(&reg)[1];
     }
-    return reg;
+    else
+    {
+        return reg;
+    }
 }
 
 

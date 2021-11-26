@@ -41,5 +41,10 @@ std::string CpuForTest::get_error() const
     return error_msg_;
 }
 
+uint8_t CpuForTest::last_instruction_cost() const
+{
+    return last_instruction_cost_;
+}
+
 } // namespace cpu8086
 } // namespace msemu
