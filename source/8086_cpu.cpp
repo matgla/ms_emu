@@ -289,19 +289,40 @@ InstructionCost Cpu::_mov_byte_modmr_to_reg()
         offset           = memory_.read16(regs_.ip + 2);
         instruction_size = 4;
     }
-
-
-    auto from_address = modes.modes[mode][mod.rm](regs_, offset);
-    auto to_reg       = modes.reg8[mod.reg];
-    if (mod.reg > 3)
+    else if (mode == 3)
     {
-        set_register<RegisterPart::high>(regs_.*to_reg, memory_.read8(from_address));
-    }
-    else
-    {
-        set_register<RegisterPart::low>(regs_.*to_reg, memory_.read8(from_address));
+        offset           = 0;
+        instruction_size = 2;
     }
 
+
+    auto to_reg = modes.reg8[mod.reg];
+    if (mode < 3)
+    {
+        auto from_address = modes.modes[mode][mod.rm](regs_, offset);
+        if (mod.reg > 3)
+        {
+            set_register<RegisterPart::high>(regs_.*to_reg, memory_.read8(from_address));
+        }
+        else
+        {
+            set_register<RegisterPart::low>(regs_.*to_reg, memory_.read8(from_address));
+        }
+    }
+    else // reg to reg
+    {
+        auto from_reg   = modes.reg8[mod.rm];
+        auto from_value = mod.rm > 3 ? get_register<RegisterPart::high>(regs_.*from_reg)
+                                     : get_register<RegisterPart::low>(regs_.*from_reg);
+        if (mod.reg > 3)
+        {
+            set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+        }
+        else
+        {
+            set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+        }
+    }
     return {.size   = instruction_size,
             .cycles = static_cast<uint8_t>(8 + modes.costs[mod.mod][mod.rm])};
 }
@@ -328,19 +349,43 @@ InstructionCost Cpu::_mov_byte_reg_to_modmr()
         offset           = memory_.read16(regs_.ip + 2);
         instruction_size = 4;
     }
-
-
-    auto to_address = modes.modes[mode][mod.rm](regs_, offset);
-    auto from_reg   = modes.reg8[mod.reg];
-    if (mod.reg > 3)
+    else if (mode == 3)
     {
-        memory_.write8(to_address,
-                       get_register<RegisterPart::high, uint8_t>(regs_.*from_reg));
+        offset           = 0;
+        instruction_size = 2;
     }
-    else
+
+    auto from_reg = modes.reg8[mod.reg];
+    if (mode < 3)
     {
-        memory_.write8(to_address,
-                       get_register<RegisterPart::low, uint8_t>(regs_.*from_reg));
+        auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+
+        if (mod.reg > 3)
+        {
+            memory_.write8(to_address,
+                           get_register<RegisterPart::high, uint8_t>(regs_.*from_reg));
+        }
+        else
+        {
+            memory_.write8(to_address,
+                           get_register<RegisterPart::low, uint8_t>(regs_.*from_reg));
+        }
+    }
+    else // reg to reg
+    {
+        auto to_reg     = modes.reg8[mod.rm];
+        auto from_value = mod.reg > 3
+                              ? get_register<RegisterPart::high, uint8_t>(regs_.*from_reg)
+                              : get_register<RegisterPart::low, uint8_t>(regs_.*from_reg);
+
+        if (mod.rm > 3)
+        {
+            set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+        }
+        else
+        {
+            set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+        }
     }
 
     return {.size   = instruction_size,

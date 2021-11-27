@@ -43,4 +43,5 @@ mov dh, [bx+di+0x1020]
 
 mov bh, [bx]
 mov ch, dh 
+mov bl, sp 
 

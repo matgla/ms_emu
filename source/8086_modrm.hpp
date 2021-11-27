@@ -31,7 +31,7 @@ using Costs             = std::array<uint8_t, 8>;
 
 struct Modes
 {
-    std::array<AddressGenerators, 3> modes;
+    std::array<AddressGenerators, 2> modes;
     std::array<uint16_t Registers::*, 8> reg16;
     std::array<uint16_t Registers::*, 8> reg8;
     std::array<Costs, 4> costs;
