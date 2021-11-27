@@ -65,6 +65,7 @@ protected:
 
     InstructionCost _mov_byte_reg_to_modmr();
     InstructionCost _mov_byte_modmr_to_reg();
+    InstructionCost _mov_byte_imm_to_modmr();
 
     InstructionCost _mov_sreg_to_reg();
     InstructionCost _mov_reg_to_sreg();

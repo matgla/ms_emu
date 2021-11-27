@@ -92,6 +92,8 @@ Cpu::Cpu(MemoryBase& memory)
     set_opcode(0xbe, &Cpu::_mov_imm_to_reg<&Registers::si, RegisterPart::whole>);
     set_opcode(0xbf, &Cpu::_mov_imm_to_reg<&Registers::di, RegisterPart::whole>);
 
+    set_opcode(0xc6, &Cpu::_mov_byte_imm_to_modmr);
+
     set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg);
     set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr);
 
@@ -274,22 +276,22 @@ InstructionCost Cpu::_mov_byte_modmr_to_reg()
     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
     uint16_t offset          = 0;
     uint8_t instruction_size = 2;
-    if (mode == 0 && mod.rm == 0x06)
+    if (mod.mod == 0 && mod.rm == 0x06)
     {
         offset           = memory_.read16(regs_.ip + 2);
         instruction_size = 4;
     }
-    else if (mode == 1)
+    else if (mod.mod == 1)
     {
         offset           = memory_.read8(regs_.ip + 2);
         instruction_size = 3;
     }
-    else if (mode == 2)
+    else if (mod.mod == 2)
     {
         offset           = memory_.read16(regs_.ip + 2);
         instruction_size = 4;
     }
-    else if (mode == 3)
+    else if (mod.mod == 3)
     {
         offset           = 0;
         instruction_size = 2;
@@ -334,22 +336,22 @@ InstructionCost Cpu::_mov_byte_reg_to_modmr()
     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
     uint16_t offset          = 0;
     uint8_t instruction_size = 2;
-    if (mode == 0 && mod.rm == 0x06)
+    if (mod.mod == 0 && mod.rm == 0x06)
     {
         offset           = memory_.read16(regs_.ip + 2);
         instruction_size = 4;
     }
-    else if (mode == 1)
+    else if (mod.mod == 1)
     {
         offset           = memory_.read8(regs_.ip + 2);
         instruction_size = 3;
     }
-    else if (mode == 2)
+    else if (mod.mod == 2)
     {
         offset           = memory_.read16(regs_.ip + 2);
         instruction_size = 4;
     }
-    else if (mode == 3)
+    else if (mod.mod == 3)
     {
         offset           = 0;
         instruction_size = 2;
@@ -378,6 +380,7 @@ InstructionCost Cpu::_mov_byte_reg_to_modmr()
                               ? get_register<RegisterPart::high, uint8_t>(regs_.*from_reg)
                               : get_register<RegisterPart::low, uint8_t>(regs_.*from_reg);
 
+
         if (mod.rm > 3)
         {
             set_register<RegisterPart::high>(regs_.*to_reg, from_value);
@@ -390,6 +393,66 @@ InstructionCost Cpu::_mov_byte_reg_to_modmr()
 
     return {.size   = instruction_size,
             .cycles = static_cast<uint8_t>(9 + modes.costs[mod.mod][mod.rm])};
+}
+
+InstructionCost Cpu::_mov_byte_imm_to_modmr()
+{
+    uint8_t ip_offset = 1;
+    uint8_t modmr     = memory_.read8(regs_.ip + ip_offset);
+    const ModRM mod(modmr);
+    uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    uint16_t offset          = 0;
+    uint8_t instruction_size = 3;
+
+    ip_offset += 1;
+    if (mod.mod == 0 && mod.rm == 0x06)
+    {
+        offset = memory_.read16(regs_.ip + ip_offset);
+        ip_offset += 2;
+        instruction_size = 5;
+    }
+    else if (mod.mod == 1)
+    {
+        offset = memory_.read8(regs_.ip + ip_offset);
+        ip_offset += 1;
+        instruction_size = 4;
+    }
+    else if (mod.mod == 2)
+    {
+        offset = memory_.read16(regs_.ip + ip_offset);
+        ip_offset += 2;
+        instruction_size = 5;
+    }
+    else if (mod.mod == 3)
+    {
+        offset           = 0;
+        instruction_size = 3;
+    }
+
+    uint8_t data           = memory_.read8(regs_.ip + ip_offset);
+    uint8_t operation_cost = 0;
+    if (mode < 3)
+    {
+        auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+        memory_.write8(to_address, data);
+        operation_cost = 10 + modes.costs[mod.mod][mod.rm];
+    }
+    else // imm to reg
+    {
+        auto to_reg = modes.reg8[mod.rm];
+
+        if (mod.rm > 3)
+        {
+            set_register<RegisterPart::high>(regs_.*to_reg, data);
+        }
+        else
+        {
+            set_register<RegisterPart::low>(regs_.*to_reg, data);
+        }
+        operation_cost = 4;
+    }
+
+    return {.size = instruction_size, .cycles = operation_cost};
 }
 
 
