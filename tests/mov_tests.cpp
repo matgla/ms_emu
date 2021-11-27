@@ -4981,9 +4981,63 @@ auto get_mov_values()
                         .expect_memory = MemoryOp {.address = 0x532, .data = {0xab}},
                         .cycles = 0x13,
                     }),
-
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc0, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.ax = 0xab, .ip=3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc1, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.cx = 0xab, .ip = 3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc2, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.dx = 0xab, .ip = 3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc3, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.bx = 0xab, .ip = 3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc4, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.ax = 0xab00, .ip = 3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc5, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.cx = 0xab00, .ip = 3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc6, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.dx = 0xab00, .ip = 3},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc6, 0xc7, 0xab},
+                        .init = Registers{},
+                        .expect = Registers{.bx = 0xab00, .ip = 3},
+                        .cycles = 0x04,
+                    }),
                 },
-
         }
     );
 }
