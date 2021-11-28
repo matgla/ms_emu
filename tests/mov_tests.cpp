@@ -183,6 +183,7 @@ TEST_P(MovFromMemToRegTests, MovFromMemoryToRegisterCmd)
     int i     = 0;
     for (const auto& test_data : data.data)
     {
+        memory_.clear();
         if (test_data.memop.data.size())
         {
             memory_.write(test_data.memop.address, test_data.memop.data);
@@ -2703,6 +2704,1095 @@ auto get_mov_values()
                 },
         },
         MovFromMemToRegParams{
+            .name = "0x8b",
+            .data =
+                {
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x00},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.ax = 0xfa00, .bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.ax = 0x103a, .bx = 0x80, .si = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x01},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.ax = 0x123a, .bx = 0x80, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x02},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.ax = 0x103a, .si = 0x04, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x03},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.ax = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.ax = 0x123a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x04},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x10}},
+                            .init   = Registers{.ax = 0xfa00, .si = 0xff},
+                            .expect = Registers{.ax = 0x103a, .si = 0xff, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x05},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0xab}},
+                            .init   = Registers{.ax = 0xfa00, .di = 0x84},
+                            .expect = Registers{.ax = 0xab3a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x06, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0xcc}},
+                            .init   = Registers{},
+                            .expect = Registers{.ax = 0xcc3a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x07},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.ax = 0x123a, .bx = 0xab, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x08},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0xba}},
+                            .init  = Registers{.bx = 0x80, .cx = 0xfa00, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .cx = 0xba3a, .si = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x09},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x11}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .cx = 0x113a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x0a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x30}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.cx = 0x303a, .si = 0x04, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x0b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.cx = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.cx = 0x203a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x0c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x10}},
+                            .init   = Registers{.cx = 0xfa00, .si = 0xff},
+                            .expect = Registers{.cx = 0x103a, .si = 0xff, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x0d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.cx = 0xfa00, .di = 0x84},
+                            .expect = Registers{.cx = 0x123a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x0e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x11}},
+                            .init   = Registers{},
+                            .expect = Registers{.cx = 0x113a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x0f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x49}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .cx = 0x493a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x10},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0xcc}},
+                            .init  = Registers{.bx = 0x80, .dx = 0xfa00, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .dx = 0xcc3a, .si = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x11},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x08}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .dx = 0x083a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x12},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.dx = 0x103a, .si = 0x04, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x13},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.dx = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.dx = 0x123a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x14},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x10}},
+                            .init   = Registers{.dx = 0xfa00, .si = 0xff},
+                            .expect = Registers{.dx = 0x103a, .si = 0xff, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x15},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init   = Registers{.dx = 0xfa00, .di = 0x84},
+                            .expect = Registers{.dx = 0x103a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x16, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x10}},
+                            .init   = Registers{},
+                            .expect = Registers{.dx = 0x103a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x17},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x10}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .dx = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x18},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0x80, .si = 0x04},
+                            .expect = Registers{.bx = 0x123a, .si = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x19},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0x80, .di = 0x04},
+                            .expect = Registers{.bx = 0x123a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x1a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.bx = 0x123a, .si = 0x04, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x1b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.bx = 0x123a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xfa00, .si = 0xff},
+                            .expect = Registers{.bx = 0x123a, .si = 0xff, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xfa00, .di = 0x84},
+                            .expect = Registers{.bx = 0x123a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x12}},
+                            .init   = Registers{},
+                            .expect = Registers{.bx = 0x123a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x20},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x04, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x21},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .di = 0x04, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x22},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x04, .bp = 0x80, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x23},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.di = 0x80, .bp = 0x04, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x24},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x10}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0xff, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x25},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.di = 0x84, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x26, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x10}},
+                            .init   = Registers{},
+                            .expect = Registers{.sp = 0x103a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x27},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x10}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x28},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x04, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x29},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .di = 0x04, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x2a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x04, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x2b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.di = 0x80, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x12}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0xff, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.di = 0x84, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x12}},
+                            .init   = Registers{},
+                            .expect = Registers{.bp = 0x123a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x30},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x203a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x31},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x203a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x32},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x203a, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x33},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.si = 0x203a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x34},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x20}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x35},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.si = 0x203a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x36, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x20}},
+                            .init   = Registers{},
+                            .expect = Registers{.si = 0x203a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x37},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .si = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x38},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0x80, .si = 0x04},
+                            .expect = Registers{.bx = 0x80, .si = 0x04, .di = 0x203a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x39},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0x80, .di = 0x04},
+                            .expect = Registers{.bx = 0x80, .di = 0x203a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x3a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x04, .di = 0x203a, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x3b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.di = 0x203a, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x20}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0xff, .di = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.di = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x20}},
+                            .init   = Registers{},
+                            .expect = Registers{.di = 0x203a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .di = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x40, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x10}},
+                            .init  = Registers{.ax = 0xfa00, .bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.ax = 0x103a, .bx = 0x80, .si = 0x04, .ip = 3},
+                            .cycles = 0x13,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x41, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.ax = 0x123a, .bx = 0x80, .di = 0x04, .ip = 3},
+                            .cycles = 0x14,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x42, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x10}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.ax = 0x103a, .si = 0x04, .bp = 0x80, .ip = 3},
+                            .cycles = 0x14,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x43, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x12}},
+                            .init  = Registers{.ax = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.ax = 0x123a, .di = 0x80, .bp = 0x04, .ip = 3},
+                            .cycles = 0x13,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x44, 0x10},
+                            .memop  = MemoryOp{.address = 0x10f, .data = {0x3a, 0x10}},
+                            .init   = Registers{.ax = 0xfa00, .si = 0xff},
+                            .expect = Registers{.ax = 0x103a, .si = 0xff, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x45, 0x10},
+                            .memop  = MemoryOp{.address = 0x94, .data = {0x3a, 0xab}},
+                            .init   = Registers{.ax = 0xfa00, .di = 0x84},
+                            .expect = Registers{.ax = 0xab3a, .di = 0x84, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x46, 0x20},
+                            .memop  = MemoryOp{.address = 0x30, .data = {0x3a, 0xcc}},
+                            .init   = Registers{.bp = 0x10},
+                            .expect = Registers{.ax = 0xcc3a, .bp = 0x10, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x47, 0x10},
+                            .memop  = MemoryOp{.address = 0xbb, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.ax = 0x123a, .bx = 0xab, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x48, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0xba}},
+                            .init  = Registers{.bx = 0x80, .cx = 0xfa00, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .cx = 0xba3a, .si = 0x04, .ip = 3},
+                            .cycles = 0x13,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x49, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x11}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .cx = 0x113a, .di = 0x04, .ip = 3},
+                            .cycles = 0x14,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x4a, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x30}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.cx = 0x303a, .si = 0x04, .bp = 0x80, .ip = 3},
+                            .cycles = 0x14,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x4b, 0x10},
+                            .memop = MemoryOp{.address = 0x94, .data = {0x3a, 0x20}},
+                            .init  = Registers{.cx = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.cx = 0x203a, .di = 0x80, .bp = 0x04, .ip = 3},
+                            .cycles = 0x13,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x4c, 0x10},
+                            .memop  = MemoryOp{.address = 0x10f, .data = {0x3a, 0x10}},
+                            .init   = Registers{.cx = 0xfa00, .si = 0xff},
+                            .expect = Registers{.cx = 0x103a, .si = 0xff, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x4d, 0x10},
+                            .memop  = MemoryOp{.address = 0x94, .data = {0x3a, 0x12}},
+                            .init   = Registers{.cx = 0xfa00, .di = 0x84},
+                            .expect = Registers{.cx = 0x123a, .di = 0x84, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x4e, 0x11},
+                            .memop  = MemoryOp{.address = 0x21, .data = {0x3a, 0x11}},
+                            .init   = Registers{.bp = 0x10},
+                            .expect = Registers{.cx = 0x113a, .bp = 0x10, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x4f, 0x10},
+                            .memop  = MemoryOp{.address = 0xbb, .data = {0x3a, 0x49}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .cx = 0x493a, .ip = 3},
+                            .cycles = 0x11,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x10},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0xcc}},
+                            .init  = Registers{.bx = 0x80, .dx = 0xfa00, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .dx = 0xcc3a, .si = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x11},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x08}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .dx = 0x083a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x12},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.dx = 0x103a, .si = 0x04, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x13},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.dx = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.dx = 0x123a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x14},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x10}},
+                            .init   = Registers{.dx = 0xfa00, .si = 0xff},
+                            .expect = Registers{.dx = 0x103a, .si = 0xff, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x15},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init   = Registers{.dx = 0xfa00, .di = 0x84},
+                            .expect = Registers{.dx = 0x103a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x16, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x10}},
+                            .init   = Registers{},
+                            .expect = Registers{.dx = 0x103a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x17},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x10}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .dx = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x18},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0x80, .si = 0x04},
+                            .expect = Registers{.bx = 0x123a, .si = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x19},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0x80, .di = 0x04},
+                            .expect = Registers{.bx = 0x123a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x1a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.bx = 0x123a, .si = 0x04, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x1b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0xfa00, .di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.bx = 0x123a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xfa00, .si = 0xff},
+                            .expect = Registers{.bx = 0x123a, .si = 0xff, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xfa00, .di = 0x84},
+                            .expect = Registers{.bx = 0x123a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x12}},
+                            .init   = Registers{},
+                            .expect = Registers{.bx = 0x123a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x1f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x20},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x04, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x21},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .di = 0x04, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x22},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x04, .bp = 0x80, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x23},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.di = 0x80, .bp = 0x04, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x24},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x10}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0xff, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x25},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x10}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.di = 0x84, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x26, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x10}},
+                            .init   = Registers{},
+                            .expect = Registers{.sp = 0x103a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x27},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x10}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .sp = 0x103a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x28},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x04, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x29},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .di = 0x04, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x2a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x04, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x2b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.di = 0x80, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x12}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0xff, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x12}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.di = 0x84, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x12}},
+                            .init   = Registers{},
+                            .expect = Registers{.bp = 0x123a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x2f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x12}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .bp = 0x123a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x30},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x203a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x31},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x203a, .di = 0x04, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x32},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x203a, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x33},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.si = 0x203a, .di = 0x80, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x34},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x20}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x35},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.si = 0x203a, .di = 0x84, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x36, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x20}},
+                            .init   = Registers{},
+                            .expect = Registers{.si = 0x203a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x37},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .si = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x38},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0x80, .si = 0x04},
+                            .expect = Registers{.bx = 0x80, .si = 0x04, .di = 0x203a, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x39},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0x80, .di = 0x04},
+                            .expect = Registers{.bx = 0x80, .di = 0x203a, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x3a},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.si = 0x04, .bp = 0x80},
+                            .expect =
+                                Registers{.si = 0x04, .di = 0x203a, .bp = 0x80, .ip = 2},
+                            .cycles = 0x10,
+                        }),
+                    add(
+                        {
+                            .cmd   = {0x8b, 0x3b},
+                            .memop = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init  = Registers{.di = 0x80, .bp = 0x04},
+                            .expect =
+                                Registers{.di = 0x203a, .bp = 0x04, .ip = 2},
+                            .cycles = 0x0f,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3c},
+                            .memop  = MemoryOp{.address = 0xff, .data = {0x3a, 0x20}},
+                            .init   = Registers{.si = 0xff},
+                            .expect = Registers{.si = 0xff, .di = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3d},
+                            .memop  = MemoryOp{.address = 0x84, .data = {0x3a, 0x20}},
+                            .init   = Registers{.di = 0x84},
+                            .expect = Registers{.di = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3e, 0x11, 0x20},
+                            .memop  = MemoryOp{.address = 0x2011, .data = {0x3a, 0x20}},
+                            .init   = Registers{},
+                            .expect = Registers{.di = 0x203a, .ip = 4},
+                            .cycles = 0x0e,
+                        }),
+                    add(
+                        {
+                            .cmd    = {0x8b, 0x3f},
+                            .memop  = MemoryOp{.address = 0xab, .data = {0x3a, 0x20}},
+                            .init   = Registers{.bx = 0xab},
+                            .expect = Registers{.bx = 0xab, .di = 0x203a, .ip = 2},
+                            .cycles = 0x0d,
+                        }),
+
+                },
+        },
+
+
+        MovFromMemToRegParams{
             .name = "0x88",
             .data =
                 {
@@ -2915,7 +4005,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x18},
                             .init          = Registers{.bx = 0x3a, .si = 0x04},
                             .expect        = Registers{.bx = 0x3a, .si = 0x04, .ip = 2},
-                            .expect_memory = MemoryOp{.address = 0x84, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3e, .data = {0x3a}},
                             .cycles        = 0x10,
                         }),
                     add(
@@ -2923,7 +4013,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x19},
                             .init          = Registers{.bx = 0x3a, .di = 0x04},
                             .expect        = Registers{.bx = 0x3a, .di = 0x04, .ip = 2},
-                            .expect_memory = MemoryOp{.address = 0x84, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3e, .data = {0x3a}},
                             .cycles        = 0x11,
                         }),
                     add(
@@ -2973,7 +4063,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x1f},
                             .init          = Registers{.bx = 0x3a},
                             .expect        = Registers{.bx = 0x3a, .ip = 2},
-                            .expect_memory = MemoryOp{.address = 0xab, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3a, .data = {0x3a}},
                             .cycles        = 0x0e,
                         }),
                     add(
@@ -3185,7 +4275,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x38},
                             .init          = Registers{.bx = 0x3a80, .si = 0x04},
                             .expect        = Registers{.bx = 0x3a80, .si = 0x04, .ip = 2},
-                            .expect_memory = MemoryOp{.address = 0x84, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3a84, .data = {0x3a}},
                             .cycles        = 0x10,
                         }),
                     add(
@@ -3193,7 +4283,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x39},
                             .init          = Registers{.bx = 0x3a80, .di = 0x04},
                             .expect        = Registers{.bx = 0x3a80, .di = 0x04, .ip = 2},
-                            .expect_memory = MemoryOp{.address = 0x84, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3a84, .data = {0x3a}},
                             .cycles        = 0x11,
                         }),
                     add(
@@ -3243,7 +4333,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x3f},
                             .init          = Registers{.bx = 0x3aab},
                             .expect        = Registers{.bx = 0x3aab, .ip = 2},
-                            .expect_memory = MemoryOp{.address = 0xab, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3aab, .data = {0x3a}},
                             .cycles        = 0x0e,
                         }),
                     add(
@@ -3725,7 +4815,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x78, 0x10},
                             .init          = Registers{.bx = 0x3a80, .si = 0x04},
                             .expect        = Registers{.bx = 0x3a80, .si = 0x04, .ip = 3},
-                            .expect_memory = MemoryOp{.address = 0x94, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3a94, .data = {0x3a}},
                             .cycles        = 0x14,
                         }),
                     add(
@@ -3733,7 +4823,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x79, 0x20},
                             .init          = Registers{.bx = 0x3a80, .di = 0x04},
                             .expect        = Registers{.bx = 0x3a80, .di = 0x04, .ip = 3},
-                            .expect_memory = MemoryOp{.address = 0xa4, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3aa4, .data = {0x3a}},
                             .cycles        = 0x15,
                         }),
                     add(
@@ -3783,12 +4873,9 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x7f, 0x1},
                             .init          = Registers{.bx = 0x3aab},
                             .expect        = Registers{.bx = 0x3aab, .ip = 3},
-                            .expect_memory = MemoryOp{.address = 0xac, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x3aac, .data = {0x3a}},
                             .cycles        = 0x12,
                         }),
-
-//////////////////////////////////////////////////////////////////////////////////////
-
                    add(
                         {
                             .cmd  = {0x88, 0x80, 0x20, 0x10},
@@ -3830,7 +4917,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0x84, 0x01, 0x10},
                             .init          = Registers{.ax = 0x3a, .si = 0xff},
                             .expect        = Registers{.ax = 0x3a, .si = 0xff, .ip = 4},
-                            .expect_memory = MemoryOp{.address = 0x100, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x1100, .data = {0x3a}},
                             .cycles        = 0x12,
                         }),
                     add(
@@ -4236,7 +5323,7 @@ auto get_mov_values()
                             .cmd           = {0x88, 0xb4, 0x01, 0x10},
                             .init          = Registers{.dx = 0x3a00, .si = 0xff},
                             .expect        = Registers{.dx = 0x3a00, .si = 0xff, .ip = 4},
-                            .expect_memory = MemoryOp{.address = 0x100, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x1100, .data = {0x3a}},
                             .cycles        = 0x12,
                         }),
                     add(
@@ -4268,15 +5355,15 @@ auto get_mov_values()
                             .cmd           = {0x88, 0xb8, 0x10, 0x10},
                             .init          = Registers{.bx = 0x3a80, .si = 0x04},
                             .expect        = Registers{.bx = 0x3a80, .si = 0x04, .ip = 4},
-                            .expect_memory = MemoryOp{.address = 0x1094, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x4a94, .data = {0x3a}},
                             .cycles        = 0x14,
                         }),
                     add(
                         {
-                            .cmd           = {0x88, 0xb9, 0x20, 0x10},
+                            .cmd           = {0x88, 0xb9, 0x10, 0x10},
                             .init          = Registers{.bx = 0x3a80, .di = 0x04},
                             .expect        = Registers{.bx = 0x3a80, .di = 0x04, .ip = 4},
-                            .expect_memory = MemoryOp{.address = 0x10a4, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x4a94, .data = {0x3a}},
                             .cycles        = 0x15,
                         }),
                     add(
@@ -4326,10 +5413,9 @@ auto get_mov_values()
                             .cmd           = {0x88, 0xbf, 0x1, 0x10},
                             .init          = Registers{.bx = 0x3aab},
                             .expect        = Registers{.bx = 0x3aab, .ip = 4},
-                            .expect_memory = MemoryOp{.address = 0x10ac, .data = {0x3a}},
+                            .expect_memory = MemoryOp{.address = 0x4aac, .data = {0x3a}},
                             .cycles        = 0x12,
                         }),
-////////////////////////////////////////////////////////////////////////////////////
                     add(
                         {
                             .cmd    = {0x88, 0xc0},
@@ -4848,9 +5934,9 @@ auto get_mov_values()
                 add(
                     {
                         .cmd    = {0xc6, 0x07, 0xab},
-                        .init = Registers{.di = 0x12, .bp = 0x10},
-                        .expect = Registers{.di = 0x12, .bp = 0x10, .ip = 3},
-                        .expect_memory = MemoryOp {.address = 0x22, .data = {0xab}},
+                        .init = Registers{.bx = 0x123},
+                        .expect = Registers{.bx = 0x123, .ip = 3},
+                        .expect_memory = MemoryOp {.address = 0x123, .data = {0xab}},
                         .cycles = 0x0f,
                     }),
                 add(
@@ -4912,9 +5998,9 @@ auto get_mov_values()
                 add(
                     {
                         .cmd    = {0xc6, 0x47, 0x10, 0xab},
-                        .init = Registers{.di = 0x12, .bp = 0x10},
-                        .expect = Registers{.di = 0x12, .bp = 0x10, .ip = 4},
-                        .expect_memory = MemoryOp {.address = 0x32, .data = {0xab}},
+                        .init = Registers{.bx = 0x122},
+                        .expect = Registers{.bx = 0x122,.ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x132, .data = {0xab}},
                         .cycles = 0x13,
                     }),
                 add(
@@ -4976,9 +6062,9 @@ auto get_mov_values()
                 add(
                     {
                         .cmd    = {0xc6, 0x87, 0x10, 0x05, 0xab},
-                        .init = Registers{.di = 0x12, .bp = 0x10},
-                        .expect = Registers{.di = 0x12, .bp = 0x10, .ip = 5},
-                        .expect_memory = MemoryOp {.address = 0x532, .data = {0xab}},
+                        .init = Registers{.bx = 0x12},
+                        .expect = Registers{.bx = 0x12, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x522, .data = {0xab}},
                         .cycles = 0x13,
                     }),
                 add(
@@ -5038,7 +6124,262 @@ auto get_mov_values()
                         .cycles = 0x04,
                     }),
                 },
+        },
+        MovFromMemToRegParams{
+            .name = "0xc7",
+            .data =
+            {
+                add(
+                    {
+                        .cmd    = {0xc7, 0x00, 0xab, 0xcd},
+                        .init = Registers{.bx = 0x10, .si = 0x12},
+                        .expect = Registers{.bx = 0x10, .si = 0x12, .ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x22, .data = {0xab, 0xcd}},
+                        .cycles = 0x11,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x01, 0xab, 0x12},
+                        .init = Registers{.bx = 0x10, .di = 0x12},
+                        .expect = Registers{.bx = 0x10, .di = 0x12, .ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x22, .data = {0xab, 0x12}},
+                        .cycles = 0x12,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x02, 0xab, 0x10},
+                        .init = Registers{.si = 0x2000, .bp = 0x10},
+                        .expect = Registers{.si = 0x2000, .bp = 0x10,.ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x2010, .data = {0xab, 0x10}},
+                        .cycles = 0x12,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x03, 0xab, 0x2a},
+                        .init = Registers{.di = 0x12, .bp = 0x10},
+                        .expect = Registers{.di = 0x12, .bp = 0x10, .ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x22, .data = {0xab, 0x2a}},
+                        .cycles = 0x11,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x04, 0xab, 0x11},
+                        .init = Registers{.si = 0x22},
+                        .expect = Registers{.si = 0x22, .ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x22, .data = {0xab, 0x11}},
+                        .cycles = 0x0f,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x05, 0xab, 0x02},
+                        .init = Registers{.di = 0x22},
+                        .expect = Registers{.di = 0x22, .ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x22, .data = {0xab, 0x02}},
+                        .cycles = 0x0f,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x06, 0x34, 0x12, 0xab, 0x19},
+                        .init = Registers{}, 
+                        .expect = Registers{.ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x1234, .data = {0xab, 0x19}},
+                        .cycles = 0x10,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x07, 0xab, 0x29},
+                        .init = Registers{.bx = 0x101},
+                        .expect = Registers{.bx = 0x101, .ip = 4},
+                        .expect_memory = MemoryOp {.address = 0x101, .data = {0xab, 0x29}},
+                        .cycles = 0x0f,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x40, 0x10, 0xab, 0x10},
+                        .init = Registers{.bx = 0x10, .si = 0x12},
+                        .expect = Registers{.bx = 0x10, .si = 0x12, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x32, .data = {0xab, 0x10}},
+                        .cycles = 0x15,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x41, 0x12, 0xab, 0x12},
+                        .init = Registers{.bx = 0x10, .di = 0x12},
+                        .expect = Registers{.bx = 0x10, .di = 0x12, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x34, .data = {0xab, 0x12}},
+                        .cycles = 0x16,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x42, 0x02, 0xab, 0x11},
+                        .init = Registers{.si = 0x2000, .bp = 0x10},
+                        .expect = Registers{.si = 0x2000, .bp = 0x10,.ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x2012, .data = {0xab, 0x11}},
+                        .cycles = 0x16,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x43, 0x03, 0xab, 0x10},
+                        .init = Registers{.di = 0x12, .bp = 0x10},
+                        .expect = Registers{.di = 0x12, .bp = 0x10, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x25, .data = {0xab, 0x10}},
+                        .cycles = 0x15,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x44, 0x10, 0xab, 0xa0},
+                        .init = Registers{.si = 0x22},
+                        .expect = Registers{.si = 0x22, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x32, .data = {0xab, 0xa0}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x45, 0x05, 0xab, 0x05},
+                        .init = Registers{.di = 0x22},
+                        .expect = Registers{.di = 0x22, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x27, .data = {0xab, 0x05}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x46, 0x34, 0xab, 0x10},
+                        .init = Registers{.bp = 0x12}, 
+                        .expect = Registers{.bp = 0x12, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x46, .data = {0xab, 0x10}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x47, 0x10, 0xab, 0x2a},
+                        .init = Registers{.bx = 0x110},
+                        .expect = Registers{.bx = 0x110, .ip = 5},
+                        .expect_memory = MemoryOp {.address = 0x120, .data = {0xab, 0x2a}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x80, 0x10, 0x20, 0xab, 0xaa},
+                        .init = Registers{.bx = 0x10, .si = 0x12},
+                        .expect = Registers{.bx = 0x10, .si = 0x12, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x2032, .data = {0xab, 0xaa}},
+                        .cycles = 0x15,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x81, 0x12, 0x10, 0xab, 0x12},
+                        .init = Registers{.bx = 0x10, .di = 0x12},
+                        .expect = Registers{.bx = 0x10, .di = 0x12, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x1034, .data = {0xab, 0x12}},
+                        .cycles = 0x16,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x82, 0x02, 0x10, 0xab, 0x07},
+                        .init = Registers{.si = 0x2000, .bp = 0x10},
+                        .expect = Registers{.si = 0x2000, .bp = 0x10,.ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x3012, .data = {0xab, 0x07}},
+                        .cycles = 0x16,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x83, 0x03, 0x10, 0xab, 0xa1},
+                        .init = Registers{.di = 0x12, .bp = 0x10},
+                        .expect = Registers{.di = 0x12, .bp = 0x10, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x1025, .data = {0xab, 0xa1}},
+                        .cycles = 0x15,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x84, 0x10, 0x05, 0xab, 0x12},
+                        .init = Registers{.si = 0x22},
+                        .expect = Registers{.si = 0x22, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x532, .data = {0xab, 0x12}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x85, 0x05, 0x10, 0xab, 0x01},
+                        .init = Registers{.di = 0x22},
+                        .expect = Registers{.di = 0x22, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x1027, .data = {0xab, 0x01}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x86, 0x34, 0x10, 0xab, 0x12},
+                        .init = Registers{.bp = 0x12}, 
+                        .expect = Registers{.bp = 0x12, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x1046, .data = {0xab, 0x12}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0x87, 0x10, 0x05, 0xab, 0x10},
+                        .init = Registers{.bx = 0x12},
+                        .expect = Registers{.bx = 0x12, .ip = 6},
+                        .expect_memory = MemoryOp {.address = 0x522, .data = {0xab, 0x10}},
+                        .cycles = 0x13,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc0, 0xab, 0xa0},
+                        .init = Registers{},
+                        .expect = Registers{.ax = 0xa0ab, .ip=4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc1, 0xab, 0x12},
+                        .init = Registers{},
+                        .expect = Registers{.cx = 0x12ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc2, 0xab, 0x19},
+                        .init = Registers{},
+                        .expect = Registers{.dx = 0x19ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc3, 0xab, 0x10},
+                        .init = Registers{},
+                        .expect = Registers{.bx = 0x10ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc4, 0xab, 0x01},
+                        .init = Registers{},
+                        .expect = Registers{.sp = 0x01ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc5, 0xab, 0x10},
+                        .init = Registers{},
+                        .expect = Registers{.bp = 0x10ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc6, 0xab, 0x12},
+                        .init = Registers{},
+                        .expect = Registers{.si = 0x12ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                add(
+                    {
+                        .cmd    = {0xc7, 0xc7, 0xab, 0x10},
+                        .init = Registers{},
+                        .expect = Registers{.di = 0x10ab, .ip = 4},
+                        .cycles = 0x04,
+                    }),
+                },
         }
+
     );
 }
 

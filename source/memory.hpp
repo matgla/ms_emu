@@ -98,6 +98,11 @@ public:
         std::memcpy(data.data(), &memory_[address], data.size());
     }
 
+    void clear()
+    {
+        std::memset(memory_.data(), 0, Size);
+    }
+
 private:
     std::array<uint8_t, Size> memory_;
 };

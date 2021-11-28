@@ -64,7 +64,11 @@ protected:
     InstructionCost _mov_reg_to_mem();
 
     InstructionCost _mov_byte_reg_to_modmr();
+
+    template <typename T>
     InstructionCost _mov_byte_modmr_to_reg();
+
+    template <typename T>
     InstructionCost _mov_byte_imm_to_modmr();
 
     InstructionCost _mov_sreg_to_reg();

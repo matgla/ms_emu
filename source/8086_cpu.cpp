@@ -92,9 +92,12 @@ Cpu::Cpu(MemoryBase& memory)
     set_opcode(0xbe, &Cpu::_mov_imm_to_reg<&Registers::si, RegisterPart::whole>);
     set_opcode(0xbf, &Cpu::_mov_imm_to_reg<&Registers::di, RegisterPart::whole>);
 
-    set_opcode(0xc6, &Cpu::_mov_byte_imm_to_modmr);
+    set_opcode(0xc6, &Cpu::_mov_byte_imm_to_modmr<uint8_t>);
+    set_opcode(0xc7, &Cpu::_mov_byte_imm_to_modmr<uint16_t>);
 
-    set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg);
+
+    set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg<uint8_t>);
+    set_opcode(0x8b, &Cpu::_mov_byte_modmr_to_reg<uint16_t>);
     set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr);
 
     set_opcode(0x8c, &Cpu::_mov_sreg_to_reg);
@@ -269,6 +272,7 @@ InstructionCost Cpu::_mov_reg_to_mem()
     }
 }
 
+template <typename T>
 InstructionCost Cpu::_mov_byte_modmr_to_reg()
 {
     uint8_t modmr = memory_.read8(regs_.ip + 1);
@@ -299,30 +303,55 @@ InstructionCost Cpu::_mov_byte_modmr_to_reg()
 
 
     auto to_reg = modes.reg8[mod.reg];
+    if constexpr (std::is_same_v<uint16_t, T>)
+    {
+        to_reg = modes.reg16[mod.reg];
+    }
     if (mode < 3)
     {
         auto from_address = modes.modes[mode][mod.rm](regs_, offset);
-        if (mod.reg > 3)
+        if constexpr (std::is_same_v<uint8_t, T>)
         {
-            set_register<RegisterPart::high>(regs_.*to_reg, memory_.read8(from_address));
+
+            if (mod.reg > 3)
+            {
+                set_register<RegisterPart::high>(regs_.*to_reg,
+                                                 memory_.read8(from_address));
+            }
+            else
+            {
+                set_register<RegisterPart::low>(regs_.*to_reg,
+                                                memory_.read8(from_address));
+            }
         }
         else
         {
-            set_register<RegisterPart::low>(regs_.*to_reg, memory_.read8(from_address));
+            set_register<RegisterPart::whole>(regs_.*to_reg,
+                                              memory_.read16(from_address));
         }
     }
     else // reg to reg
     {
-        auto from_reg   = modes.reg8[mod.rm];
-        auto from_value = mod.rm > 3 ? get_register<RegisterPart::high>(regs_.*from_reg)
-                                     : get_register<RegisterPart::low>(regs_.*from_reg);
-        if (mod.reg > 3)
+        if constexpr (std::is_same_v<uint8_t, T>)
         {
-            set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+            auto from_reg   = modes.reg8[mod.rm];
+            auto from_value = mod.rm > 3
+                                  ? get_register<RegisterPart::high>(regs_.*from_reg)
+                                  : get_register<RegisterPart::low>(regs_.*from_reg);
+            if (mod.reg > 3)
+            {
+                set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+            }
+            else
+            {
+                set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+            }
         }
         else
         {
-            set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+            auto from_reg    = modes.reg16[mod.rm];
+            const auto value = get_register<RegisterPart::whole>(regs_.*from_reg);
+            set_register<RegisterPart::whole>(regs_.*to_reg, value);
         }
     }
     return {.size   = instruction_size,
@@ -395,6 +424,7 @@ InstructionCost Cpu::_mov_byte_reg_to_modmr()
             .cycles = static_cast<uint8_t>(9 + modes.costs[mod.mod][mod.rm])};
 }
 
+template <typename T>
 InstructionCost Cpu::_mov_byte_imm_to_modmr()
 {
     uint8_t ip_offset = 1;
@@ -402,52 +432,114 @@ InstructionCost Cpu::_mov_byte_imm_to_modmr()
     const ModRM mod(modmr);
     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
     uint16_t offset          = 0;
-    uint8_t instruction_size = 3;
+    uint8_t instruction_size = 0;
+    if constexpr (std::is_same_v<uint16_t, T>)
+    {
+        instruction_size = 4;
+    }
+    else
+    {
+        instruction_size = 3;
+    }
 
     ip_offset += 1;
     if (mod.mod == 0 && mod.rm == 0x06)
     {
         offset = memory_.read16(regs_.ip + ip_offset);
         ip_offset += 2;
-        instruction_size = 5;
+        if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            instruction_size = 6;
+        }
+        else
+        {
+            instruction_size = 5;
+        }
     }
     else if (mod.mod == 1)
     {
         offset = memory_.read8(regs_.ip + ip_offset);
         ip_offset += 1;
-        instruction_size = 4;
+        if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            instruction_size = 5;
+        }
+        else
+        {
+            instruction_size = 4;
+        }
     }
     else if (mod.mod == 2)
     {
         offset = memory_.read16(regs_.ip + ip_offset);
         ip_offset += 2;
-        instruction_size = 5;
+        if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            instruction_size = 6;
+        }
+        else
+        {
+            instruction_size = 5;
+        }
     }
     else if (mod.mod == 3)
     {
-        offset           = 0;
-        instruction_size = 3;
+        offset = 0;
+        if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            instruction_size = 4;
+        }
+        else
+        {
+            instruction_size = 3;
+        }
+    }
+    T data = {};
+    if constexpr (std::is_same_v<T, uint16_t>)
+    {
+        data = memory_.read16(regs_.ip + ip_offset);
+    }
+    else
+    {
+        data = memory_.read8(regs_.ip + ip_offset);
     }
 
-    uint8_t data           = memory_.read8(regs_.ip + ip_offset);
     uint8_t operation_cost = 0;
     if (mode < 3)
     {
         auto to_address = modes.modes[mode][mod.rm](regs_, offset);
-        memory_.write8(to_address, data);
+        if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            memory_.write16(to_address, data);
+        }
+        else
+        {
+            memory_.write8(to_address, data);
+        }
+
+
         operation_cost = 10 + modes.costs[mod.mod][mod.rm];
     }
     else // imm to reg
     {
-        auto to_reg = modes.reg8[mod.rm];
 
-        if (mod.rm > 3)
+        if constexpr (std::is_same_v<uint8_t, T>)
         {
-            set_register<RegisterPart::high>(regs_.*to_reg, data);
+            auto to_reg = modes.reg8[mod.rm];
+            if (mod.rm > 3)
+            {
+                set_register<RegisterPart::high>(regs_.*to_reg, data);
+            }
+            else
+            {
+                set_register<RegisterPart::low>(regs_.*to_reg, data);
+            }
         }
         else
         {
-            set_register<RegisterPart::low>(regs_.*to_reg, data);
+            auto to_reg = modes.reg16[mod.rm];
+
+            set_register<RegisterPart::whole>(regs_.*to_reg, data);
         }
         operation_cost = 4;
     }
