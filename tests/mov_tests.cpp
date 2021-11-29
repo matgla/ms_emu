@@ -4791,8 +4791,30 @@ auto get_mov_values()
                         }),
                 },
         },
-
-
+        MovFromMemToRegParams{
+            .name = "0x8c",
+            .data =
+                {
+                    add(
+                        {
+                            .cmd  = {0x8c, 0x00},
+                            .memop= MemoryOp{.address = 0x84, .data = {0x34, 0x12}},
+                            .init = Registers{.bx = 0x80, .si = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .si = 0x04, .ip = 2, .es = 0x1234},
+                            .cycles        = 0x10,
+                        }),
+                        add(
+                        {
+                            .cmd  = {0x8c, 0x01},
+                            .memop= MemoryOp{.address = 0x84, .data = {0x34, 0x12}},
+                            .init = Registers{.bx = 0x80, .di = 0x04},
+                            .expect =
+                                Registers{.bx = 0x80, .di = 0x04, .ip = 2, .es = 0x1234},
+                            .cycles        = 0x11,
+                        }),
+                }
+        },
         MovFromMemToRegParams{
             .name = "0x88",
             .data =

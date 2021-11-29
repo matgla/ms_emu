@@ -199,15 +199,48 @@ InstructionCost Cpu::_mov_reg_to_sreg()
 
 InstructionCost Cpu::_mov_sreg_to_reg()
 {
-    uint8_t data = memory_.read8(regs_.ip + 1);
-    if (get_mod(data) == 0x3)
+    uint8_t modmr = memory_.read8(regs_.ip + 1);
+    const ModRM mod(modmr);
+    uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    uint16_t offset          = 0;
+    uint8_t instruction_size = 2;
+    if (mod.mod == 0 && mod.rm == 0x06)
     {
-        uint8_t sreg = get_reg_op(data) & 0x3;
-        uint8_t reg  = get_rm(data);
-
-        get_reg16_from_mod(reg) = get_sreg(sreg);
+        offset           = memory_.read16(regs_.ip + 2);
+        instruction_size = 4;
     }
-    return {.size = 3, .cycles = 2};
+    else if (mod.mod == 1)
+    {
+        offset           = memory_.read8(regs_.ip + 2);
+        instruction_size = 3;
+    }
+    else if (mod.mod == 2)
+    {
+        offset           = memory_.read16(regs_.ip + 2);
+        instruction_size = 4;
+    }
+    else if (mod.mod == 3)
+    {
+        offset           = 0;
+        instruction_size = 2;
+    }
+
+
+    auto to_sreg = modes.sreg[mod.reg];
+    uint8_t cost = 2;
+    if (mode < 3)
+    {
+        auto from_address = modes.modes[mode][mod.rm](regs_, offset);
+        set_register<RegisterPart::whole>(regs_.*to_sreg, memory_.read16(from_address));
+        cost = 9 + modes.costs[mod.mod][mod.rm];
+    }
+    else // reg to reg
+    {
+        auto from_reg    = modes.reg16[mod.rm];
+        const auto value = get_register<RegisterPart::whole>(regs_.*from_reg);
+        set_register<RegisterPart::whole>(regs_.*to_sreg, value);
+    }
+    return {.size = instruction_size, .cycles = cost};
 }
 
 template <uint16_t Registers::*reg, RegisterPart part>
