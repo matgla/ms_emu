@@ -98,7 +98,9 @@ Cpu::Cpu(MemoryBase& memory)
 
     set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg<uint8_t>);
     set_opcode(0x8b, &Cpu::_mov_byte_modmr_to_reg<uint16_t>);
-    set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr);
+    set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr<uint8_t>);
+    set_opcode(0x89, &Cpu::_mov_byte_reg_to_modmr<uint16_t>);
+
 
     set_opcode(0x8c, &Cpu::_mov_sreg_to_reg);
     set_opcode(0x8e, &Cpu::_mov_reg_to_sreg);
@@ -358,6 +360,7 @@ InstructionCost Cpu::_mov_byte_modmr_to_reg()
             .cycles = static_cast<uint8_t>(8 + modes.costs[mod.mod][mod.rm])};
 }
 
+template <typename T>
 InstructionCost Cpu::_mov_byte_reg_to_modmr()
 {
     uint8_t modmr = memory_.read8(regs_.ip + 1);
@@ -386,37 +389,59 @@ InstructionCost Cpu::_mov_byte_reg_to_modmr()
         instruction_size = 2;
     }
 
-    auto from_reg = modes.reg8[mod.reg];
-    if (mode < 3)
+    if constexpr (std::is_same_v<uint8_t, T>)
     {
-        auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+        auto from_reg = modes.reg8[mod.reg];
+        if (mode < 3)
+        {
+            auto to_address = modes.modes[mode][mod.rm](regs_, offset);
 
-        if (mod.reg > 3)
-        {
-            memory_.write8(to_address,
-                           get_register<RegisterPart::high, uint8_t>(regs_.*from_reg));
+            if (mod.reg > 3)
+            {
+                memory_.write8(to_address, get_register<RegisterPart::high, uint8_t>(
+                                               regs_.*from_reg));
+            }
+            else
+            {
+                memory_.write8(to_address,
+                               get_register<RegisterPart::low, uint8_t>(regs_.*from_reg));
+            }
         }
-        else
+        else // reg to reg
         {
-            memory_.write8(to_address,
-                           get_register<RegisterPart::low, uint8_t>(regs_.*from_reg));
+            auto to_reg = modes.reg8[mod.rm];
+            auto from_value =
+                mod.reg > 3 ? get_register<RegisterPart::high, uint8_t>(regs_.*from_reg)
+                            : get_register<RegisterPart::low, uint8_t>(regs_.*from_reg);
+
+
+            if (mod.rm > 3)
+            {
+                set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+            }
+            else
+            {
+                set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+            }
         }
     }
-    else // reg to reg
+    else
     {
-        auto to_reg     = modes.reg8[mod.rm];
-        auto from_value = mod.reg > 3
-                              ? get_register<RegisterPart::high, uint8_t>(regs_.*from_reg)
-                              : get_register<RegisterPart::low, uint8_t>(regs_.*from_reg);
-
-
-        if (mod.rm > 3)
+        auto from_reg = modes.reg16[mod.reg];
+        if (mode < 3)
         {
-            set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+            auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+            const auto value =
+                get_register<RegisterPart::whole, uint16_t>(regs_.*from_reg);
+            memory_.write16(to_address, value);
         }
-        else
+        else // reg to reg
         {
-            set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+            auto to_reg     = modes.reg16[mod.rm];
+            auto from_value = get_register<RegisterPart::whole>(regs_.*from_reg);
+
+
+            set_register<RegisterPart::whole>(regs_.*to_reg, from_value);
         }
     }
 

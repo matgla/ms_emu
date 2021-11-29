@@ -63,6 +63,7 @@ protected:
     template <uint16_t Registers::*reg, RegisterPart part>
     InstructionCost _mov_reg_to_mem();
 
+    template <typename T>
     InstructionCost _mov_byte_reg_to_modmr();
 
     template <typename T>
