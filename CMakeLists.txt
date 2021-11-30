@@ -30,7 +30,7 @@ add_library(msemu_private_flags INTERFACE)
 
 target_compile_options(msemu_private_flags INTERFACE
     -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion -Weffc++
-    $<$<CONFIG:DEBUG>:-Og -g>
+    $<$<CONFIG:DEBUG>:-Og -g -save-temps>
     $<$<CONFIG:RELEASE>:-O3>
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++2a>
 )

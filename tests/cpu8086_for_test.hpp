@@ -26,16 +26,37 @@ namespace msemu
 {
 namespace cpu8086
 {
-class CpuForTest : public Cpu
+
+template <typename MemoryType>
+class CpuForTest : public Cpu<MemoryType>
 {
 public:
-    using Cpu::Cpu;
-    const Registers& get_registers() const;
-    Registers& get_registers();
+    using Cpu<MemoryType>::Cpu;
 
-    bool has_error() const;
-    std::string get_error() const;
-    uint8_t last_instruction_cost() const;
+    const Registers& get_registers() const
+    {
+        return this->regs_;
+    }
+
+    Registers& get_registers()
+    {
+        return this->regs_;
+    }
+
+    bool has_error() const
+    {
+        return strlen(this->error_msg_) > 0;
+    }
+
+    std::string get_error() const
+    {
+        return this->error_msg_;
+    }
+
+    uint8_t last_instruction_cost() const
+    {
+        return this->last_instruction_cost_;
+    }
 };
 
 inline bool operator==(const Registers& lhs, const Registers& rhs)

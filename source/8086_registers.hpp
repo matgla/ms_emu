@@ -130,5 +130,17 @@ constexpr inline T get_register(uint16_t reg)
     }
 }
 
+template <RegisterPart p>
+struct RegisterDataType
+{
+    using type = uint8_t;
+};
+
+template <>
+struct RegisterDataType<RegisterPart::whole>
+{
+    using type = uint16_t;
+};
+
 
 } // namespace msemu::cpu8086

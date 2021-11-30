@@ -1,17 +1,15 @@
 add_executable(msemu)
 
-add_library(msemu_cpu8086)
+add_library(msemu_cpu8086 INTERFACE)
 
 target_sources(msemu_cpu8086 
-    PUBLIC 
+    INTERFACE 
         ${CMAKE_CURRENT_SOURCE_DIR}/8086_cpu.hpp 
         ${CMAKE_CURRENT_SOURCE_DIR}/memory.hpp 
-    PRIVATE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/8086_cpu.cpp
 )
 
 target_link_libraries(msemu_cpu8086
-    PUBLIC 
+    INTERFACE  
         msemu_private_flags
 )
 
@@ -26,7 +24,7 @@ target_include_directories(msemu
 )
 
 target_include_directories(msemu_cpu8086 
-    PUBLIC 
+    INTERFACE 
         ${PROJECT_SOURCE_DIR}/source
 )
 
