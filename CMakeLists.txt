@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.13)
 
-project (msemu CXX)
+project (msemu NONE)
 
 include(FetchContent)
 
@@ -17,6 +17,12 @@ include (mspkg)
 
 setup_mspkg(${mspkg_SOURCE_DIR})
 
+# find_package(pico-sdk REQUIRED)
+# include (cmake/preload/toolchains/pico_arm_gcc)
+# include (pico_sdk_init)
+# pico_sdk_init()
+enable_language(ASM C CXX) 
+
 find_package(CMakeUtils REQUIRED)
 
 include (sanitizers)
@@ -29,7 +35,7 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(msemu_private_flags INTERFACE)
 
 target_compile_options(msemu_private_flags INTERFACE
-    -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion -Weffc++
+    -fdiagnostics-color=always -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion -Weffc++
     $<$<CONFIG:DEBUG>:-Og -g -save-temps>
     $<$<CONFIG:RELEASE>:-O3>
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++2a>
@@ -42,5 +48,6 @@ add_subdirectory(source)
 if (ENABLE_TESTS)
 
   add_subdirectory(tests)
+  message (STATUS "Tests are enabled")
 
 endif ()

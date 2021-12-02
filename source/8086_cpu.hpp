@@ -29,12 +29,6 @@ namespace msemu
 namespace cpu8086
 {
 
-struct InstructionCost
-{
-    uint8_t size;
-    uint8_t cycles;
-};
-
 template <typename MemoryType>
 class Cpu
 {
@@ -50,45 +44,43 @@ public:
         {
             set_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl);
         }
-        set_opcode(0x00, &Cpu::_unimpl);
 
         // mov group
-        set_opcode(0xa0, &Cpu::_mov_mem_to_reg<&Registers::ax, RegisterPart::low>);
-        set_opcode(0xa1, &Cpu::_mov_mem_to_reg<&Registers::ax, RegisterPart::whole>);
-        set_opcode(0xa2, &Cpu::_mov_reg_to_mem<&Registers::ax, RegisterPart::low>);
-        set_opcode(0xa3, &Cpu::_mov_reg_to_mem<&Registers::ax, RegisterPart::whole>);
+        set_opcode(0xa0, &Cpu::_mov_mem_to_reg<Register::al_id, uint8_t>);
+        set_opcode(0xa1, &Cpu::_mov_mem_to_reg<Register::ax_id, uint16_t>);
+        set_opcode(0xa2, &Cpu::_mov_reg_to_mem<Register::al_id, uint8_t>);
+        set_opcode(0xa3, &Cpu::_mov_reg_to_mem<Register::ax_id, uint16_t>);
 
 
-        set_opcode(0xb0, &Cpu::_mov_imm_to_reg<&Registers::ax, RegisterPart::low>);
-        set_opcode(0xb1, &Cpu::_mov_imm_to_reg<&Registers::cx, RegisterPart::low>);
-        set_opcode(0xb2, &Cpu::_mov_imm_to_reg<&Registers::dx, RegisterPart::low>);
-        set_opcode(0xb3, &Cpu::_mov_imm_to_reg<&Registers::bx, RegisterPart::low>);
-        set_opcode(0xb4, &Cpu::_mov_imm_to_reg<&Registers::ax, RegisterPart::high>);
-        set_opcode(0xb5, &Cpu::_mov_imm_to_reg<&Registers::cx, RegisterPart::high>);
-        set_opcode(0xb6, &Cpu::_mov_imm_to_reg<&Registers::dx, RegisterPart::high>);
-        set_opcode(0xb7, &Cpu::_mov_imm_to_reg<&Registers::bx, RegisterPart::high>);
+        set_opcode(0xb0, &Cpu::_mov_imm_to_reg<Register::al_id, uint8_t>);
+        set_opcode(0xb1, &Cpu::_mov_imm_to_reg<Register::cl_id, uint8_t>);
+        set_opcode(0xb2, &Cpu::_mov_imm_to_reg<Register::dl_id, uint8_t>);
+        set_opcode(0xb3, &Cpu::_mov_imm_to_reg<Register::bl_id, uint8_t>);
 
-        set_opcode(0xb8, &Cpu::_mov_imm_to_reg<&Registers::ax, RegisterPart::whole>);
-        set_opcode(0xb9, &Cpu::_mov_imm_to_reg<&Registers::cx, RegisterPart::whole>);
-        set_opcode(0xba, &Cpu::_mov_imm_to_reg<&Registers::dx, RegisterPart::whole>);
-        set_opcode(0xbb, &Cpu::_mov_imm_to_reg<&Registers::bx, RegisterPart::whole>);
-        set_opcode(0xbc, &Cpu::_mov_imm_to_reg<&Registers::sp, RegisterPart::whole>);
-        set_opcode(0xbd, &Cpu::_mov_imm_to_reg<&Registers::bp, RegisterPart::whole>);
-        set_opcode(0xbe, &Cpu::_mov_imm_to_reg<&Registers::si, RegisterPart::whole>);
-        set_opcode(0xbf, &Cpu::_mov_imm_to_reg<&Registers::di, RegisterPart::whole>);
+        set_opcode(0xb4, &Cpu::_mov_imm_to_reg<Register::ah_id, uint8_t>);
+        set_opcode(0xb5, &Cpu::_mov_imm_to_reg<Register::ch_id, uint8_t>);
+        set_opcode(0xb6, &Cpu::_mov_imm_to_reg<Register::dh_id, uint8_t>);
+        set_opcode(0xb7, &Cpu::_mov_imm_to_reg<Register::bh_id, uint8_t>);
 
-        set_opcode(0xc6, &Cpu::_mov_byte_imm_to_modmr<uint8_t>);
-        set_opcode(0xc7, &Cpu::_mov_byte_imm_to_modmr<uint16_t>);
+        set_opcode(0xb8, &Cpu::_mov_imm_to_reg<Register::ax_id, uint16_t>);
+        set_opcode(0xb9, &Cpu::_mov_imm_to_reg<Register::cx_id, uint16_t>);
+        set_opcode(0xba, &Cpu::_mov_imm_to_reg<Register::dx_id, uint16_t>);
+        set_opcode(0xbb, &Cpu::_mov_imm_to_reg<Register::bx_id, uint16_t>);
 
+        set_opcode(0xbc, &Cpu::_mov_imm_to_reg<Register::sp_id, uint16_t>);
+        set_opcode(0xbd, &Cpu::_mov_imm_to_reg<Register::bp_id, uint16_t>);
+        set_opcode(0xbe, &Cpu::_mov_imm_to_reg<Register::si_id, uint16_t>);
+        set_opcode(0xbf, &Cpu::_mov_imm_to_reg<Register::di_id, uint16_t>);
 
+        // set_opcode(0xc6, &Cpu::_mov_byte_imm_to_modmr<uint8_t>);
+        // set_opcode(0xc7, &Cpu::_mov_byte_imm_to_modmr<uint16_t>);
         set_opcode(0x8a, &Cpu::_mov_byte_modmr_to_reg<uint8_t>);
-        set_opcode(0x8b, &Cpu::_mov_byte_modmr_to_reg<uint16_t>);
-        set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr<uint8_t>);
-        set_opcode(0x89, &Cpu::_mov_byte_reg_to_modmr<uint16_t>);
+        // set_opcode(0x8b, &Cpu::_mov_byte_modmr_to_reg<uint16_t>);
+        // set_opcode(0x88, &Cpu::_mov_byte_reg_to_modmr<uint8_t>);
+        // set_opcode(0x89, &Cpu::_mov_byte_reg_to_modmr<uint16_t>);
+        // set_opcode(0x8c, &Cpu::_mov_sreg_to_reg);
+        // set_opcode(0x8e, &Cpu::_mov_reg_to_sreg);
 
-
-        set_opcode(0x8c, &Cpu::_mov_sreg_to_reg);
-        set_opcode(0x8e, &Cpu::_mov_reg_to_sreg);
         set_opcode(0xc3, &Cpu::_unimpl);
 
         reset();
@@ -97,14 +89,11 @@ public:
 #endif
     }
 
+
     void step()
     {
-        op_                  = &opcodes_[memory_.template read<uint8_t>(regs_.ip)];
-        InstructionCost cost = (this->*op_->impl)();
-        regs_.ip += cost.size;
-
-        // TODO: align cycles
-        last_instruction_cost_ = cost.cycles;
+        op_ = &opcodes_[memory_.template read<uint8_t>(Register::ip())];
+        (this->*op_->impl)();
 #ifdef DUMP_CORE_STATE
         dump();
 #endif
@@ -118,7 +107,7 @@ public:
 
 protected:
     // configuration
-    void set_opcode(uint8_t id, InstructionCost (Cpu::*fun)(void))
+    void set_opcode(uint8_t id, void (Cpu::*fun)(void))
     {
         opcodes_[id].impl = fun;
     }
@@ -131,461 +120,487 @@ protected:
 
     // core emulation
 
-    InstructionCost _unimpl()
+    void _unimpl()
     {
         snprintf(error_msg_, sizeof(error_msg_), "Opcode: 0x%x is unimplemented!\n",
-                 memory_.template read<uint8_t>(regs_.ip));
-        return {.size = 1, .cycles = 0};
+                 memory_.template read<uint8_t>(Register::ip()));
+        last_instruction_cost_ = 0;
     }
 
-    template <uint16_t Registers::*reg, RegisterPart part>
-    InstructionCost _mov_imm_to_reg()
+    template <uint32_t reg, typename T>
+    void _mov_imm_to_reg()
     {
-        using DataType      = RegisterDataType<part>::type;
-        const DataType data = memory_.template read<DataType>(regs_.ip + 1);
-        set_register<part>(regs_.*reg, data);
-
-        if constexpr (part == RegisterPart::whole)
-            return {.size = 3, .cycles = 4};
-        else
-            return {.size = 2, .cycles = 4};
+        Register::increment_ip(1);
+        const T data = memory_.template read<T>(Register::ip());
+        Register::increment_ip(sizeof(T));
+        set_register_by_id<reg>(data);
+        last_instruction_cost_ = 4;
     }
 
-    template <uint16_t Registers::*reg, RegisterPart part>
-    InstructionCost _mov_mem_to_reg()
+    template <uint32_t reg, typename T>
+    void _mov_mem_to_reg()
     {
-        const uint16_t address = memory_.template read<uint16_t>(regs_.ip + 1);
-        if constexpr (part == RegisterPart::whole)
+        Register::increment_ip(1);
+        const uint16_t address = memory_.template read<uint16_t>(Register::ip());
+        Register::increment_ip(2);
+
+        const T value = memory_.template read<T>(address);
+
+        set_register_by_id<reg>(value);
+        if constexpr (reg == Register::ax_id || reg == Register::al_id ||
+                      reg == Register::ah_id)
         {
-            set_register<part>(regs_.*reg, memory_.template read<uint16_t>(address));
+            last_instruction_cost_ = 14;
         }
         else
         {
-            set_register<part>(regs_.*reg, memory_.template read<uint8_t>(address));
-        }
-        if constexpr (reg == &Registers::ax)
-        {
-            return {.size = 3, .cycles = 10};
-        }
-        else
-        {
-            return {.size = 3, .cycles = 8 + get_cost(AccessCost::Direct)};
-        }
-    }
-    template <uint16_t Registers::*reg, RegisterPart part>
-    InstructionCost _mov_reg_to_mem()
-    {
-        const uint16_t address = memory_.template read<uint16_t>(regs_.ip + 1);
-        if constexpr (part == RegisterPart::whole)
-        {
-            memory_.write(address, get_register<part>(regs_.*reg));
-        }
-        else
-        {
-            memory_.write(address, static_cast<uint8_t>(get_register<part>(regs_.*reg)));
-        }
-        if constexpr (reg == &Registers::ax)
-        {
-            return {.size = 3, .cycles = 10};
-        }
-        else
-        {
-            return {.size = 3, .cycles = 9 + get_cost(AccessCost::Direct)};
+            last_instruction_cost_ = 13 + get_cost(AccessCost::Direct);
         }
     }
 
+    template <uint32_t reg, typename T>
+    void _mov_reg_to_mem()
+    {
+        Register::increment_ip(1);
+        const uint16_t address = memory_.template read<uint16_t>(Register::ip());
+        Register::increment_ip(2);
+        const T value = get_register_by_id<reg, T>();
+        memory_.write(address, value);
+
+        if constexpr (reg == Register::al_id || reg == Register::ah_id ||
+                      reg == Register::ax_id)
+        {
+            last_instruction_cost_ = 14;
+        }
+        else
+        {
+            last_instruction_cost_ = 13 + get_cost(AccessCost::Direct);
+        }
+    }
+
+    // template <typename T>
+    // void _mov_byte_reg_to_modmr()
+    // {
+    //     uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
+    //     const ModRM mod(modmr);
+    //     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    //     uint16_t offset          = 0;
+    //     uint8_t instruction_size = 2;
+    //     if (mod.mod == 0 && mod.rm == 0x06)
+    //     {
+    //         offset           = memory_.template read<uint16_t>(regs_.ip + 2);
+    //         instruction_size = 4;
+    //     }
+    //     else if (mod.mod == 1)
+    //     {
+    //         offset           = memory_.template read<uint8_t>(regs_.ip + 2);
+    //         instruction_size = 3;
+    //     }
+    //     else if (mod.mod == 2)
+    //     {
+    //         offset           = memory_.template read<uint16_t>(regs_.ip + 2);
+    //         instruction_size = 4;
+    //     }
+    //     else if (mod.mod == 3)
+    //     {
+    //         offset           = 0;
+    //         instruction_size = 2;
+    //     }
+
+    //     if constexpr (std::is_same_v<uint8_t, T>)
+    //     {
+    //         auto from_reg = modes.reg8[mod.reg];
+    //         if (mode < 3)
+    //         {
+    //             auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+
+    //             if (mod.reg > 3)
+    //             {
+    //                 memory_.write(to_address, get_register<RegisterPart::high,
+    //                 uint8_t>(
+    //                                               regs_.*from_reg));
+    //             }
+    //             else
+    //             {
+    //                 memory_.write(to_address, get_register<RegisterPart::low, uint8_t>(
+    //                                               regs_.*from_reg));
+    //             }
+    //         }
+    //         else // reg to reg
+    //         {
+    //             auto to_reg = modes.reg8[mod.rm];
+    //             auto from_value =
+    //                 mod.reg > 3
+    //                     ? get_register<RegisterPart::high, uint8_t>(regs_.*from_reg)
+    //                     : get_register<RegisterPart::low, uint8_t>(regs_.*from_reg);
+
+
+    //             if (mod.rm > 3)
+    //             {
+    //                 set_register<RegisterPart::high>(regs_.*to_reg, from_value);
+    //             }
+    //             else
+    //             {
+    //                 set_register<RegisterPart::low>(regs_.*to_reg, from_value);
+    //             }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         auto from_reg = modes.reg16[mod.reg];
+    //         if (mode < 3)
+    //         {
+    //             auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+    //             const auto value =
+    //                 get_register<RegisterPart::whole, uint16_t>(regs_.*from_reg);
+    //             memory_.write(to_address, value);
+    //         }
+    //         else // reg to reg
+    //         {
+    //             auto to_reg     = modes.reg16[mod.rm];
+    //             auto from_value = get_register<RegisterPart::whole>(regs_.*from_reg);
+
+
+    //             set_register<RegisterPart::whole>(regs_.*to_reg, from_value);
+    //         }
+    //     }
+
+    //     last_instruction_cost_ = static_cast<uint16_t>(9 +
+    //     modes.costs[mod.mod][mod.rm]);
+    // }
+
+    uint32_t mod8_id(uint8_t m)
+    {
+        switch (m)
+        {
+            case 0:
+                return Register::al_id;
+            case 1:
+                return Register::cl_id;
+            case 2:
+                return Register::dl_id;
+            case 3:
+                return Register::bl_id;
+            case 4:
+                return Register::ah_id;
+            case 5:
+                return Register::ch_id;
+            case 6:
+                return Register::dh_id;
+            case 7:
+                return Register::bh_id;
+        }
+        return 0;
+    }
+
+    uint32_t mod16_id(uint8_t m)
+    {
+        switch (m)
+        {
+            case 0:
+                return Register::ax_id;
+            case 1:
+                return Register::cx_id;
+            case 2:
+                return Register::dx_id;
+            case 3:
+                return Register::bx_id;
+            case 4:
+                return Register::sp_id;
+            case 5:
+                return Register::bp_id;
+            case 6:
+                return Register::si_id;
+            case 7:
+                return Register::di_id;
+        }
+        return 0;
+    }
     template <typename T>
-    InstructionCost _mov_byte_reg_to_modmr()
+    void _mov_byte_modmr_to_reg()
     {
-        uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
+        Register::increment_ip(1);
+        uint8_t modmr = memory_.template read<uint8_t>(Register::ip());
+        Register::increment_ip(1);
         const ModRM mod(modmr);
-        uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset          = 0;
-        uint8_t instruction_size = 2;
+        uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+        uint16_t offset = 0;
         if (mod.mod == 0 && mod.rm == 0x06)
         {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
+            offset = memory_.template read<uint16_t>(Register::ip());
+            Register::increment_ip(2);
         }
         else if (mod.mod == 1)
         {
-            offset           = memory_.template read<uint8_t>(regs_.ip + 2);
-            instruction_size = 3;
+            offset = memory_.template read<uint8_t>(Register::ip());
+            Register::increment_ip(1);
         }
         else if (mod.mod == 2)
         {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 3)
-        {
-            offset           = 0;
-            instruction_size = 2;
-        }
-
-        if constexpr (std::is_same_v<uint8_t, T>)
-        {
-            auto from_reg = modes.reg8[mod.reg];
-            if (mode < 3)
-            {
-                auto to_address = modes.modes[mode][mod.rm](regs_, offset);
-
-                if (mod.reg > 3)
-                {
-                    memory_.write(to_address, get_register<RegisterPart::high, uint8_t>(
-                                                  regs_.*from_reg));
-                }
-                else
-                {
-                    memory_.write(to_address, get_register<RegisterPart::low, uint8_t>(
-                                                  regs_.*from_reg));
-                }
-            }
-            else // reg to reg
-            {
-                auto to_reg = modes.reg8[mod.rm];
-                auto from_value =
-                    mod.reg > 3
-                        ? get_register<RegisterPart::high, uint8_t>(regs_.*from_reg)
-                        : get_register<RegisterPart::low, uint8_t>(regs_.*from_reg);
-
-
-                if (mod.rm > 3)
-                {
-                    set_register<RegisterPart::high>(regs_.*to_reg, from_value);
-                }
-                else
-                {
-                    set_register<RegisterPart::low>(regs_.*to_reg, from_value);
-                }
-            }
-        }
-        else
-        {
-            auto from_reg = modes.reg16[mod.reg];
-            if (mode < 3)
-            {
-                auto to_address = modes.modes[mode][mod.rm](regs_, offset);
-                const auto value =
-                    get_register<RegisterPart::whole, uint16_t>(regs_.*from_reg);
-                memory_.write(to_address, value);
-            }
-            else // reg to reg
-            {
-                auto to_reg     = modes.reg16[mod.rm];
-                auto from_value = get_register<RegisterPart::whole>(regs_.*from_reg);
-
-
-                set_register<RegisterPart::whole>(regs_.*to_reg, from_value);
-            }
-        }
-
-        return {.size   = instruction_size,
-                .cycles = static_cast<uint8_t>(9 + modes.costs[mod.mod][mod.rm])};
-    }
-
-    template <typename T>
-    InstructionCost _mov_byte_modmr_to_reg()
-    {
-        uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
-        const ModRM mod(modmr);
-        uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset          = 0;
-        uint8_t instruction_size = 2;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 1)
-        {
-            offset           = memory_.template read<uint8_t>(regs_.ip + 2);
-            instruction_size = 3;
-        }
-        else if (mod.mod == 2)
-        {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 3)
-        {
-            offset           = 0;
-            instruction_size = 2;
-        }
-
-
-        auto to_reg = modes.reg8[mod.reg];
-        if constexpr (std::is_same_v<uint16_t, T>)
-        {
-            to_reg = modes.reg16[mod.reg];
-        }
-        if (mode < 3)
-        {
-            auto from_address = modes.modes[mode][mod.rm](regs_, offset);
-            if constexpr (std::is_same_v<uint8_t, T>)
-            {
-
-                if (mod.reg > 3)
-                {
-                    set_register<RegisterPart::high>(
-                        regs_.*to_reg, memory_.template read<uint8_t>(from_address));
-                }
-                else
-                {
-                    set_register<RegisterPart::low>(
-                        regs_.*to_reg, memory_.template read<uint8_t>(from_address));
-                }
-            }
-            else
-            {
-                set_register<RegisterPart::whole>(
-                    regs_.*to_reg, memory_.template read<uint16_t>(from_address));
-            }
-        }
-        else // reg to reg
-        {
-            if constexpr (std::is_same_v<uint8_t, T>)
-            {
-                auto from_reg   = modes.reg8[mod.rm];
-                auto from_value = mod.rm > 3
-                                      ? get_register<RegisterPart::high>(regs_.*from_reg)
-                                      : get_register<RegisterPart::low>(regs_.*from_reg);
-                if (mod.reg > 3)
-                {
-                    set_register<RegisterPart::high>(regs_.*to_reg, from_value);
-                }
-                else
-                {
-                    set_register<RegisterPart::low>(regs_.*to_reg, from_value);
-                }
-            }
-            else
-            {
-                auto from_reg    = modes.reg16[mod.rm];
-                const auto value = get_register<RegisterPart::whole>(regs_.*from_reg);
-                set_register<RegisterPart::whole>(regs_.*to_reg, value);
-            }
-        }
-        return {.size   = instruction_size,
-                .cycles = static_cast<uint8_t>(8 + modes.costs[mod.mod][mod.rm])};
-    }
-
-    template <typename T>
-    InstructionCost _mov_byte_imm_to_modmr()
-    {
-        uint8_t ip_offset = 1;
-        uint8_t modmr     = memory_.template read<uint8_t>(regs_.ip + ip_offset);
-        const ModRM mod(modmr);
-        uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset          = 0;
-        uint8_t instruction_size = 0;
-        if constexpr (std::is_same_v<uint16_t, T>)
-        {
-            instruction_size = 4;
-        }
-        else
-        {
-            instruction_size = 3;
-        }
-
-        ip_offset += 1;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset = memory_.template read<uint16_t>(regs_.ip + ip_offset);
-            ip_offset += 2;
-            if constexpr (std::is_same_v<T, uint16_t>)
-            {
-                instruction_size = 6;
-            }
-            else
-            {
-                instruction_size = 5;
-            }
-        }
-        else if (mod.mod == 1)
-        {
-            offset = memory_.template read<uint8_t>(regs_.ip + ip_offset);
-            ip_offset += 1;
-            if constexpr (std::is_same_v<T, uint16_t>)
-            {
-                instruction_size = 5;
-            }
-            else
-            {
-                instruction_size = 4;
-            }
-        }
-        else if (mod.mod == 2)
-        {
-            offset = memory_.template read<uint16_t>(regs_.ip + ip_offset);
-            ip_offset += 2;
-            if constexpr (std::is_same_v<T, uint16_t>)
-            {
-                instruction_size = 6;
-            }
-            else
-            {
-                instruction_size = 5;
-            }
+            offset = memory_.template read<uint16_t>(Register::ip());
+            Register::increment_ip(2);
         }
         else if (mod.mod == 3)
         {
             offset = 0;
-            if constexpr (std::is_same_v<T, uint16_t>)
-            {
-                instruction_size = 4;
-            }
-            else
-            {
-                instruction_size = 3;
-            }
-        }
-        T data = {};
-        if constexpr (std::is_same_v<T, uint16_t>)
-        {
-            data = memory_.template read<uint16_t>(regs_.ip + ip_offset);
-        }
-        else
-        {
-            data = memory_.template read<uint8_t>(regs_.ip + ip_offset);
         }
 
-        uint8_t operation_cost = 0;
+
+        auto to_reg = mod8_id(mod.reg);
+        if constexpr (std::is_same_v<uint16_t, T>)
+        {
+            to_reg = mod16_id(mod.reg);
+        }
         if (mode < 3)
         {
-            auto to_address = modes.modes[mode][mod.rm](regs_, offset);
-            if constexpr (std::is_same_v<T, uint16_t>)
-            {
-                memory_.write(to_address, data);
-            }
-            else
-            {
-                memory_.write(to_address, data);
-            }
-
-
-            operation_cost = 10 + modes.costs[mod.mod][mod.rm];
-        }
-        else // imm to reg
-        {
-
+            auto from_address = modes.modes[mode][mod.rm](offset);
             if constexpr (std::is_same_v<uint8_t, T>)
             {
-                auto to_reg = modes.reg8[mod.rm];
-                if (mod.rm > 3)
-                {
-                    set_register<RegisterPart::high>(regs_.*to_reg, data);
-                }
-                else
-                {
-                    set_register<RegisterPart::low>(regs_.*to_reg, data);
-                }
+                const uint8_t v = memory_.template read<uint8_t>(from_address);
+                set_register_by_id(to_reg, v);
             }
             else
             {
-                auto to_reg = modes.reg16[mod.rm];
-
-                set_register<RegisterPart::whole>(regs_.*to_reg, data);
+                const uint16_t v = memory_.template read<uint16_t>(from_address);
+                set_register_by_id(to_reg, v);
             }
-            operation_cost = 4;
-        }
-
-        return {.size = instruction_size, .cycles = operation_cost};
-    }
-
-    InstructionCost _mov_reg_to_sreg()
-    {
-        uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
-        const ModRM mod(modmr);
-        uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset          = 0;
-        uint8_t instruction_size = 2;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 1)
-        {
-            offset           = memory_.template read<uint8_t>(regs_.ip + 2);
-            instruction_size = 3;
-        }
-        else if (mod.mod == 2)
-        {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 3)
-        {
-            offset           = 0;
-            instruction_size = 2;
-        }
-
-
-        auto from_sreg = modes.sreg[mod.reg];
-        uint8_t cost   = 2;
-        if (mode < 3)
-        {
-            auto to_address  = modes.modes[mode][mod.rm](regs_, offset);
-            const auto value = get_register<RegisterPart::whole>(regs_.*from_sreg);
-            memory_.write(to_address, value);
-            cost = 9 + modes.costs[mod.mod][mod.rm];
+            last_instruction_cost_ =
+                static_cast<uint8_t>(12 + modes.costs[mod.mod][mod.rm]);
         }
         else // reg to reg
         {
-            auto to_reg      = modes.reg16[mod.rm];
-            const auto value = get_register<RegisterPart::whole>(regs_.*from_sreg);
-            set_register<RegisterPart::whole>(regs_.*to_reg, value);
+            if constexpr (std::is_same_v<uint8_t, T>)
+            {
+                auto from_reg = mod8_id(mod.rm);
+                uint8_t v     = get_register_by_id<uint8_t>(from_reg);
+                set_register_by_id(to_reg, v);
+            }
+            else
+            {
+                auto from_reg = mod16_id(mod.rm);
+                uint16_t v    = get_register_by_id<uint16_t>(from_reg);
+                set_register_by_id(to_reg, v);
+            }
+            last_instruction_cost_ = 2;
         }
-        return {.size = instruction_size, .cycles = cost};
     }
 
-    InstructionCost _mov_sreg_to_reg()
-    {
-        const uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
-        const ModRM mod(modmr);
-        uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset          = 0;
-        uint8_t instruction_size = 2;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 1)
-        {
-            offset           = memory_.template read<uint8_t>(regs_.ip + 2);
-            instruction_size = 3;
-        }
-        else if (mod.mod == 2)
-        {
-            offset           = memory_.template read<uint16_t>(regs_.ip + 2);
-            instruction_size = 4;
-        }
-        else if (mod.mod == 3)
-        {
-            offset           = 0;
-            instruction_size = 2;
-        }
+    // template <typename T>
+    // void _mov_byte_imm_to_modmr()
+    // {
+    //     uint8_t ip_offset = 1;
+    //     uint8_t modmr     = memory_.template read<uint8_t>(regs_.ip + ip_offset);
+    //     const ModRM mod(modmr);
+    //     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    //     uint16_t offset          = 0;
+    //     uint8_t instruction_size = 0;
+    //     if constexpr (std::is_same_v<uint16_t, T>)
+    //     {
+    //         instruction_size = 4;
+    //     }
+    //     else
+    //     {
+    //         instruction_size = 3;
+    //     }
+
+    //     ip_offset += 1;
+    //     if (mod.mod == 0 && mod.rm == 0x06)
+    //     {
+    //         offset = memory_.template read<uint16_t>(regs_.ip + ip_offset);
+    //         ip_offset += 2;
+    //         if constexpr (std::is_same_v<T, uint16_t>)
+    //         {
+    //             instruction_size = 6;
+    //         }
+    //         else
+    //         {
+    //             instruction_size = 5;
+    //         }
+    //     }
+    //     else if (mod.mod == 1)
+    //     {
+    //         offset = memory_.template read<uint8_t>(regs_.ip + ip_offset);
+    //         ip_offset += 1;
+    //         if constexpr (std::is_same_v<T, uint16_t>)
+    //         {
+    //             instruction_size = 5;
+    //         }
+    //         else
+    //         {
+    //             instruction_size = 4;
+    //         }
+    //     }
+    //     else if (mod.mod == 2)
+    //     {
+    //         offset = memory_.template read<uint16_t>(regs_.ip + ip_offset);
+    //         ip_offset += 2;
+    //         if constexpr (std::is_same_v<T, uint16_t>)
+    //         {
+    //             instruction_size = 6;
+    //         }
+    //         else
+    //         {
+    //             instruction_size = 5;
+    //         }
+    //     }
+    //     else if (mod.mod == 3)
+    //     {
+    //         offset = 0;
+    //         if constexpr (std::is_same_v<T, uint16_t>)
+    //         {
+    //             instruction_size = 4;
+    //         }
+    //         else
+    //         {
+    //             instruction_size = 3;
+    //         }
+    //     }
+    //     T data = {};
+    //     if constexpr (std::is_same_v<T, uint16_t>)
+    //     {
+    //         data = memory_.template read<uint16_t>(regs_.ip + ip_offset);
+    //     }
+    //     else
+    //     {
+    //         data = memory_.template read<uint8_t>(regs_.ip + ip_offset);
+    //     }
+
+    //     uint8_t operation_cost = 0;
+    //     if (mode < 3)
+    //     {
+    //         auto to_address = modes.modes[mode][mod.rm](regs_, offset);
+    //         if constexpr (std::is_same_v<T, uint16_t>)
+    //         {
+    //             memory_.write(to_address, data);
+    //         }
+    //         else
+    //         {
+    //             memory_.write(to_address, data);
+    //         }
 
 
-        auto to_sreg = modes.sreg[mod.reg];
-        uint8_t cost = 2;
-        if (mode < 3)
-        {
-            auto from_address = modes.modes[mode][mod.rm](regs_, offset);
-            set_register<RegisterPart::whole>(
-                regs_.*to_sreg, memory_.template read<uint16_t>(from_address));
-            cost = 9 + modes.costs[mod.mod][mod.rm];
-        }
-        else // reg to reg
-        {
-            auto from_reg    = modes.reg16[mod.rm];
-            const auto value = get_register<RegisterPart::whole>(regs_.*from_reg);
-            set_register<RegisterPart::whole>(regs_.*to_sreg, value);
-        }
-        return {.size = instruction_size, .cycles = cost};
-    }
+    //         operation_cost = 10 + modes.costs[mod.mod][mod.rm];
+    //     }
+    //     else // imm to reg
+    //     {
+
+    //         if constexpr (std::is_same_v<uint8_t, T>)
+    //         {
+    //             auto to_reg = modes.reg8[mod.rm];
+    //             if (mod.rm > 3)
+    //             {
+    //                 set_register<RegisterPart::high>(regs_.*to_reg, data);
+    //             }
+    //             else
+    //             {
+    //                 set_register<RegisterPart::low>(regs_.*to_reg, data);
+    //             }
+    //         }
+    //         else
+    //         {
+    //             auto to_reg = modes.reg16[mod.rm];
+
+    //             set_register<RegisterPart::whole>(regs_.*to_reg, data);
+    //         }
+    //         operation_cost = 4;
+    //     }
+
+    //     last_instruction_cost_ = operation_cost;
+    // }
+
+    // void _mov_reg_to_sreg()
+    // {
+    //     uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
+    //     const ModRM mod(modmr);
+    //     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    //     uint16_t offset          = 0;
+    //     uint8_t instruction_size = 2;
+    //     if (mod.mod == 0 && mod.rm == 0x06)
+    //     {
+    //         offset           = memory_.template read<uint16_t>(regs_.ip + 2);
+    //         instruction_size = 4;
+    //     }
+    //     else if (mod.mod == 1)
+    //     {
+    //         offset           = memory_.template read<uint8_t>(regs_.ip + 2);
+    //         instruction_size = 3;
+    //     }
+    //     else if (mod.mod == 2)
+    //     {
+    //         offset           = memory_.template read<uint16_t>(regs_.ip + 2);
+    //         instruction_size = 4;
+    //     }
+    //     else if (mod.mod == 3)
+    //     {
+    //         offset           = 0;
+    //         instruction_size = 2;
+    //     }
+
+
+    //     auto from_sreg = modes.sreg[mod.reg];
+    //     uint8_t cost   = 2;
+    //     if (mode < 3)
+    //     {
+    //         auto to_address  = modes.modes[mode][mod.rm](regs_, offset);
+    //         const auto value = get_register<RegisterPart::whole>(regs_.*from_sreg);
+    //         memory_.write(to_address, value);
+    //         cost = 9 + modes.costs[mod.mod][mod.rm];
+    //     }
+    //     else // reg to reg
+    //     {
+    //         auto to_reg      = modes.reg16[mod.rm];
+    //         const auto value = get_register<RegisterPart::whole>(regs_.*from_sreg);
+    //         set_register<RegisterPart::whole>(regs_.*to_reg, value);
+    //     }
+    //     last_instruction_cost_ = cost;
+    // }
+
+    // void _mov_sreg_to_reg()
+    // {
+    //     const uint8_t modmr = memory_.template read<uint8_t>(regs_.ip + 1);
+    //     const ModRM mod(modmr);
+    //     uint8_t mode             = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+    //     uint16_t offset          = 0;
+    //     uint8_t instruction_size = 2;
+    //     if (mod.mod == 0 && mod.rm == 0x06)
+    //     {
+    //         offset           = memory_.template read<uint16_t>(regs_.ip + 2);
+    //         instruction_size = 4;
+    //     }
+    //     else if (mod.mod == 1)
+    //     {
+    //         offset           = memory_.template read<uint8_t>(regs_.ip + 2);
+    //         instruction_size = 3;
+    //     }
+    //     else if (mod.mod == 2)
+    //     {
+    //         offset           = memory_.template read<uint16_t>(regs_.ip + 2);
+    //         instruction_size = 4;
+    //     }
+    //     else if (mod.mod == 3)
+    //     {
+    //         offset           = 0;
+    //         instruction_size = 2;
+    //     }
+
+
+    //     auto to_sreg = modes.sreg[mod.reg];
+    //     uint8_t cost = 2;
+    //     if (mode < 3)
+    //     {
+    //         auto from_address = modes.modes[mode][mod.rm](regs_, offset);
+    //         set_register<RegisterPart::whole>(
+    //             regs_.*to_sreg, memory_.template read<uint16_t>(from_address));
+    //         cost = 9 + modes.costs[mod.mod][mod.rm];
+    //     }
+    //     else // reg to reg
+    //     {
+    //         auto from_reg    = modes.reg16[mod.rm];
+    //         const auto value = get_register<RegisterPart::whole>(regs_.*from_reg);
+    //         set_register<RegisterPart::whole>(regs_.*to_sreg, value);
+    //     }
+    //     last_instruction_cost_ = cost;
+    // }
 
 
     struct MoveOperand
@@ -596,7 +611,7 @@ protected:
 
     struct Instruction
     {
-        typedef InstructionCost (Cpu::*fun)(void);
+        typedef void (Cpu::*fun)(void);
         fun impl;
     };
 

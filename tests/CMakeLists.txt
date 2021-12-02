@@ -24,7 +24,7 @@ target_compile_options(msemu_tests
 
 add_custom_target(ut
     COMMAND 
-        $<TARGET_FILE:msemu_tests>
+        $<TARGET_FILE:msemu_tests> --gtest_color=yes
     DEPENDS 
         msemu_tests
 )

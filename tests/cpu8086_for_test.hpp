@@ -33,14 +33,49 @@ class CpuForTest : public Cpu<MemoryType>
 public:
     using Cpu<MemoryType>::Cpu;
 
-    const Registers& get_registers() const
+    void struct_to_reg(const Registers& r)
     {
-        return this->regs_;
+        Register::ax(r.ax);
+        Register::bx(r.bx);
+        Register::cx(r.cx);
+        Register::dx(r.dx);
+        Register::si(r.si);
+        Register::di(r.di);
+        Register::bp(r.bp);
+        Register::sp(r.sp);
+        Register::ip(r.ip);
+        Register::cs(r.cs);
+        Register::ds(r.ds);
+        Register::es(r.es);
+        Register::ss(r.ss);
     }
 
-    Registers& get_registers()
+    Registers reg_to_struct() const
     {
-        return this->regs_;
+        return {.ax = Register::ax(),
+                .bx = Register::bx(),
+                .cx = Register::cx(),
+                .dx = Register::dx(),
+                .si = Register::si(),
+                .di = Register::di(),
+                .bp = Register::bp(),
+                .sp = Register::sp(),
+                .ip = Register::ip(),
+                .cs = Register::cs(),
+                .ds = Register::ds(),
+                .es = Register::es(),
+                .ss = Register::ss()};
+    }
+
+
+    const Registers get_registers() const
+    {
+        return reg_to_struct();
+    }
+
+    void set_registers(const Registers& r)
+    {
+        struct_to_reg(r);
     }
 
     bool has_error() const

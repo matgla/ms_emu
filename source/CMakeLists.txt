@@ -8,10 +8,7 @@ target_sources(msemu_cpu8086
         ${CMAKE_CURRENT_SOURCE_DIR}/memory.hpp 
 )
 
-target_link_libraries(msemu_cpu8086
-    INTERFACE  
-        msemu_private_flags
-)
+target_link_libraries(msemu_cpu8086 INTERFACE msemu_private_flags)
 
 target_sources(msemu
     PRIVATE 
@@ -30,10 +27,14 @@ target_include_directories(msemu_cpu8086
 
 target_link_libraries(msemu 
     PRIVATE 
-        msemu_private_flags
         msemu_cpu8086
+        msemu_private_flags
+
+        # pico_stdlib
 )
 
 if (PRINT_CORE_STATUS)
     target_compile_definitions(msemu PRIVATE -DDUMP_CORE_STATE)
 endif ()
+
+# pico_add_extra_outputs(msemu)

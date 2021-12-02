@@ -62,9 +62,7 @@ public:
         }
         else
         {
-            uint16_t ret;
-            std::memcpy(&ret, &memory_[address], sizeof(ret));
-            return ret;
+            return static_cast<uint16_t>(memory_[address + 1] << 8 | (memory_[address]));
         }
     }
 
@@ -75,7 +73,8 @@ public:
 
     void write(std::size_t address, uint16_t data)
     {
-        std::memcpy(&memory_[address], &data, sizeof(data));
+        memory_[address]     = static_cast<uint8_t>(data & 0xff);
+        memory_[address + 1] = static_cast<uint8_t>((data >> 8) & 0xff);
     }
 
     void write(std::size_t address, const std::span<const uint8_t> data)
