@@ -1,6 +1,6 @@
 ---
 Language: Cpp
-ColumnLimit: 90
+ColumnLimit: 110 
 AlignConsecutiveAssignments: true
 AccessModifierOffset: -4
 AlignEscapedNewlinesLeft: false

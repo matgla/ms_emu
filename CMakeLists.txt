@@ -23,6 +23,10 @@ setup_mspkg(${mspkg_SOURCE_DIR})
 # pico_sdk_init()
 enable_language(ASM C CXX) 
 
+if (NOT CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Release)
+endif ()
+
 find_package(CMakeUtils REQUIRED)
 
 include (sanitizers)
@@ -35,13 +39,13 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(msemu_private_flags INTERFACE)
 
 target_compile_options(msemu_private_flags INTERFACE
-    -fdiagnostics-color=always -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion -Weffc++
+    -fdiagnostics-color=always -Wall -Wpedantic -Werror -Wextra -pedantic-errors -Wconversion -Wsign-conversion 
     $<$<CONFIG:DEBUG>:-Og -g -save-temps>
     $<$<CONFIG:RELEASE>:-O3>
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++2a>
 )
 
-target_link_libraries(msemu_private_flags INTERFACE enable_sanitizers coverage_flags)
+# target_link_libraries(msemu_private_flags INTERFACE enable_sanitizers coverage_flags)
 
 add_subdirectory(source)
 

@@ -12,6 +12,7 @@ target_sources(msemu_tests
 target_link_libraries(msemu_tests 
     PRIVATE 
         msemu_cpu8086 
+        msemu_private_flags
         gtest_main 
         gmock
         gtest

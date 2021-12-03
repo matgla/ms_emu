@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 namespace msemu::cpu8086
 {
@@ -42,16 +43,16 @@ uint16_t r10 = 0;
 uint32_t r11 = 0;
 #endif
 
-#define set_reg8(reg, val, mask, offset)                                                 \
-    {                                                                                    \
-        reg = reg & (~mask);                                                             \
-        reg = reg | (static_cast<uint32_t>(val) << offset);                              \
+#define set_reg8(reg, val, mask, offset)                                                                     \
+    {                                                                                                        \
+        reg = reg & (~mask);                                                                                 \
+        reg = reg | (static_cast<uint32_t>(val) << offset);                                                  \
     }
 
-#define set_reg16(reg, val, mask, offset)                                                \
-    {                                                                                    \
-        reg = reg & (~mask);                                                             \
-        reg = reg | (static_cast<uint32_t>(val) << offset);                              \
+#define set_reg16(reg, val, mask, offset)                                                                    \
+    {                                                                                                        \
+        reg = reg & (~mask);                                                                                 \
+        reg = reg | (static_cast<uint32_t>(val) << offset);                                                  \
     }
 
 #define get_reg8(reg, mask, offset) (static_cast<uint8_t>((reg >> offset) & 0xff))
@@ -603,42 +604,6 @@ inline T get_register_by_id(uint32_t reg)
     return std::numeric_limits<T>::max();
 }
 
-
-struct Registers
-{
-    uint16_t ax;
-    uint16_t bx;
-    uint16_t cx;
-    uint16_t dx;
-    uint16_t si; // source index
-    uint16_t di; // destination index
-    uint16_t bp; // base pointer
-    uint16_t sp; // stack pointer
-    uint16_t ip; // instruction pointer
-    uint16_t cs; // code segment
-    uint16_t ds; // data segment
-    uint16_t es; // extra segment
-    uint16_t ss; // stack segment
-    struct
-    {
-        uint16_t res_0 : 1;
-        uint16_t res_1 : 1;
-        uint16_t res_2 : 1;
-        uint16_t res_3 : 1;
-        uint16_t o : 1; // overflow
-        uint16_t d : 1; // direction
-        uint16_t i : 1; // interrupt
-        uint16_t t : 1; // trap
-        uint16_t s : 1; // sign
-        uint16_t z : 1; // zero
-        uint16_t res_4 : 1;
-        uint16_t a : 1; // adjust
-        uint16_t res_5 : 1;
-        uint16_t p : 1; // parity
-        uint16_t res_6 : 1;
-        uint16_t c : 1; // carry
-    } flags;
-};
 
 enum class RegisterPart
 {

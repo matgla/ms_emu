@@ -49,7 +49,8 @@ public:
         std::size_t size = static_cast<std::size_t>(ftell(f));
         fseek(f, 0, SEEK_SET);
 
-        fread(&memory_[0], 1, size, f);
+        auto bytes = fread(&memory_[0], 1, size, f);
+        static_cast<void>(bytes);
         fclose(f);
     }
 
