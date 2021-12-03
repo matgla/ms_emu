@@ -352,39 +352,79 @@ struct ModRMInitData
 };
 
 const std::array<InitSut, 8> op_mod_sreg_0{
-    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {}, 16},
-    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {}, 17},
-    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {}, 17},
-    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {}, 16},
-    InitSut{Registers{.si = 0x2030}, {}, 14},
-    InitSut{Registers{.di = 0x2030}, {}, 14},
-    InitSut{Registers{}, {0x30, 0x20}, 15},
-    InitSut{Registers{.bx = 0x2030}, {}, 14},
+    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {}, 19},
+    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {}, 20},
+    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {}, 20},
+    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {}, 19},
+    InitSut{Registers{.si = 0x2030}, {}, 17},
+    InitSut{Registers{.di = 0x2030}, {}, 17},
+    InitSut{Registers{}, {0x30, 0x20}, 18},
+    InitSut{Registers{.bx = 0x2030}, {}, 17},
 };
 
 const std::array<InitSut, 8> op_mod_sreg_1{
-    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {0x15}, 20},
-    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {0x15}, 21},
-    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {0x15}, 21},
-    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {0x15}, 20},
-    InitSut{Registers{.si = 0x2030}, {0x15}, 18},
-    InitSut{Registers{.di = 0x2030}, {0x15}, 18},
-    InitSut{Registers{.bp = 0x2030}, {0x15}, 18},
-    InitSut{Registers{.bx = 0x2030}, {0x15}, 18},
+    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {0x15}, 23},
+    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {0x15}, 24},
+    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {0x15}, 24},
+    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {0x15}, 23},
+    InitSut{Registers{.si = 0x2030}, {0x15}, 21},
+    InitSut{Registers{.di = 0x2030}, {0x15}, 21},
+    InitSut{Registers{.bp = 0x2030}, {0x15}, 21},
+    InitSut{Registers{.bx = 0x2030}, {0x15}, 21},
 };
 
 const std::array<InitSut, 8> op_mod_sreg_2{
-    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {0x15, 0x10}, 20},
-    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {0x15, 0x10}, 21},
-    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {0x15, 0x10}, 21},
-    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {0x15, 0x10}, 20},
-    InitSut{Registers{.si = 0x2030}, {0x15, 0x10}, 18},
-    InitSut{Registers{.di = 0x2030}, {0x15, 0x10}, 18},
-    InitSut{Registers{.bp = 0x2030}, {0x15, 0x10}, 18},
-    InitSut{Registers{.bx = 0x2030}, {0x15, 0x10}, 18},
+    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {0x15, 0x10}, 23},
+    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {0x15, 0x10}, 24},
+    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {0x15, 0x10}, 24},
+    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {0x15, 0x10}, 23},
+    InitSut{Registers{.si = 0x2030}, {0x15, 0x10}, 21},
+    InitSut{Registers{.di = 0x2030}, {0x15, 0x10}, 21},
+    InitSut{Registers{.bp = 0x2030}, {0x15, 0x10}, 21},
+    InitSut{Registers{.bx = 0x2030}, {0x15, 0x10}, 21},
 };
 
 const std::array<InitSut, 8> op_mod_sreg_3{
+    InitSut{Registers{.ax = 0x1234}, {}, 2}, InitSut{Registers{.cx = 0x1234}, {}, 2},
+    InitSut{Registers{.dx = 0x1234}, {}, 2}, InitSut{Registers{.bx = 0x1234}, {}, 2},
+    InitSut{Registers{.sp = 0x1234}, {}, 2}, InitSut{Registers{.bp = 0x1234}, {}, 2},
+    InitSut{Registers{.si = 0x1234}, {}, 2}, InitSut{Registers{.di = 0x1234}, {}, 2},
+};
+
+const std::array<InitSut, 8> op_to_mod_sreg_0{
+    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {}, 20},
+    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {}, 21},
+    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {}, 21},
+    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {}, 20},
+    InitSut{Registers{.si = 0x2030}, {}, 18},
+    InitSut{Registers{.di = 0x2030}, {}, 18},
+    InitSut{Registers{}, {0x30, 0x20}, 19},
+    InitSut{Registers{.bx = 0x2030}, {}, 18},
+};
+
+const std::array<InitSut, 8> op_to_mod_sreg_1{
+    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {0x15}, 24},
+    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {0x15}, 25},
+    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {0x15}, 25},
+    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {0x15}, 24},
+    InitSut{Registers{.si = 0x2030}, {0x15}, 22},
+    InitSut{Registers{.di = 0x2030}, {0x15}, 22},
+    InitSut{Registers{.bp = 0x2030}, {0x15}, 22},
+    InitSut{Registers{.bx = 0x2030}, {0x15}, 22},
+};
+
+const std::array<InitSut, 8> op_to_mod_sreg_2{
+    InitSut{Registers{.bx = 0x1010, .si = 0x1020}, {0x15, 0x10}, 24},
+    InitSut{Registers{.bx = 0x1010, .di = 0x1020}, {0x15, 0x10}, 25},
+    InitSut{Registers{.si = 0x1020, .bp = 0x1010}, {0x15, 0x10}, 25},
+    InitSut{Registers{.di = 0x1020, .bp = 0x1010}, {0x15, 0x10}, 24},
+    InitSut{Registers{.si = 0x2030}, {0x15, 0x10}, 22},
+    InitSut{Registers{.di = 0x2030}, {0x15, 0x10}, 22},
+    InitSut{Registers{.bp = 0x2030}, {0x15, 0x10}, 22},
+    InitSut{Registers{.bx = 0x2030}, {0x15, 0x10}, 22},
+};
+
+const std::array<InitSut, 8> op_to_mod_sreg_3{
     InitSut{Registers{.ax = 0x1234}, {}, 2}, InitSut{Registers{.cx = 0x1234}, {}, 2},
     InitSut{Registers{.dx = 0x1234}, {}, 2}, InitSut{Registers{.bx = 0x1234}, {}, 2},
     InitSut{Registers{.sp = 0x1234}, {}, 2}, InitSut{Registers{.bp = 0x1234}, {}, 2},
@@ -1034,7 +1074,7 @@ MovTestsParams sreg_to_modmr(uint8_t command,
     const std::vector<MovDataInit> modmr_test_inits{
         {
             MovDataInit{
-                .sut_init = op_mod_sreg_0,
+                .sut_init = op_to_mod_sreg_0,
                 .test_init =
                     {
 
@@ -1049,48 +1089,48 @@ MovTestsParams sreg_to_modmr(uint8_t command,
                     },
             },
             MovDataInit{
-                .sut_init = op_mod_sreg_1,
+                .sut_init = op_to_mod_sreg_1,
                 .test_init =
                     {
 
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
                     },
             },
             MovDataInit{
-                .sut_init = op_mod_sreg_2,
+                .sut_init = op_to_mod_sreg_2,
                 .test_init =
                     {
 
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0xbc3a, 0xbc3a},
                     },
             },
             MovDataInit{
-                .sut_init = op_mod_sreg_3,
+                .sut_init = op_to_mod_sreg_3,
                 .test_init =
                     {
 
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
-                        ModRMInitData{{}, 0x0, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
+                        ModRMInitData{{}, 0x1234, 0x1234},
                     },
             },
 
@@ -1100,7 +1140,7 @@ MovTestsParams sreg_to_modmr(uint8_t command,
     const std::vector<uint16_t Registers::*> regs{&Registers::es, &Registers::cs, &Registers::ss,
                                                   &Registers::ds};
 
-    const ModRM modmr_limits(0, 0, 0);
+    const ModRM modmr_limits(3, 0, 7);
 
     return reg_to_modmr_generate_data(command, modmr_test_inits, regs, modmr_limits, loc);
 }
