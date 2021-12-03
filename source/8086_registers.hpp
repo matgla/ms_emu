@@ -118,29 +118,29 @@ private:
 
 
 public:
+    constexpr static uint32_t al_id = 0;
+    constexpr static uint32_t cl_id = 1;
+    constexpr static uint32_t dl_id = 2;
+    constexpr static uint32_t bl_id = 3;
+    constexpr static uint32_t ah_id = 4;
+    constexpr static uint32_t ch_id = 5;
+    constexpr static uint32_t dh_id = 6;
+    constexpr static uint32_t bh_id = 7;
+
     constexpr static uint32_t ax_id = 0;
-    constexpr static uint32_t al_id = 1;
-    constexpr static uint32_t ah_id = 2;
+    constexpr static uint32_t cx_id = 1;
+    constexpr static uint32_t dx_id = 2;
     constexpr static uint32_t bx_id = 3;
-    constexpr static uint32_t bl_id = 4;
-    constexpr static uint32_t bh_id = 5;
-    constexpr static uint32_t cx_id = 6;
-    constexpr static uint32_t cl_id = 7;
-    constexpr static uint32_t ch_id = 8;
-    constexpr static uint32_t dx_id = 9;
-    constexpr static uint32_t dl_id = 10;
-    constexpr static uint32_t dh_id = 11;
+    constexpr static uint32_t sp_id = 4;
+    constexpr static uint32_t bp_id = 5;
+    constexpr static uint32_t si_id = 6;
+    constexpr static uint32_t di_id = 7;
 
-    constexpr static uint32_t sp_id = 12;
-    constexpr static uint32_t bp_id = 13;
-    constexpr static uint32_t si_id = 14;
-    constexpr static uint32_t di_id = 15;
 
-    constexpr static uint32_t cs_id = 16;
-    constexpr static uint32_t ds_id = 17;
-    constexpr static uint32_t ss_id = 18;
-    constexpr static uint32_t es_id = 19;
-
+    constexpr static uint32_t es_id = 0;
+    constexpr static uint32_t cs_id = 1;
+    constexpr static uint32_t ss_id = 2;
+    constexpr static uint32_t ds_id = 3;
 
     static inline void reset()
     {
@@ -371,21 +371,15 @@ public:
 };
 
 template <uint32_t reg>
-inline void set_register_by_id(uint16_t value)
+inline void set_register_8_by_id(uint16_t value)
 {
     switch (reg)
     {
-        case Register::ax_id:
-            Register::ax(value);
-            break;
         case Register::al_id:
             Register::al(static_cast<uint8_t>(value));
             break;
         case Register::ah_id:
             Register::ah(static_cast<uint8_t>(value));
-            break;
-        case Register::bx_id:
-            Register::bx(value);
             break;
         case Register::bl_id:
             Register::bl(static_cast<uint8_t>(value));
@@ -393,23 +387,37 @@ inline void set_register_by_id(uint16_t value)
         case Register::bh_id:
             Register::bh(static_cast<uint8_t>(value));
             break;
-        case Register::cx_id:
-            Register::cx(value);
-            break;
         case Register::cl_id:
             Register::cl(static_cast<uint8_t>(value));
             break;
         case Register::ch_id:
             Register::ch(static_cast<uint8_t>(value));
             break;
-        case Register::dx_id:
-            Register::dx(value);
-            break;
         case Register::dl_id:
             Register::dl(static_cast<uint8_t>(value));
             break;
         case Register::dh_id:
             Register::dh(static_cast<uint8_t>(value));
+            break;
+    }
+}
+
+template <uint32_t reg>
+inline void set_register_16_by_id(uint16_t value)
+{
+    switch (reg)
+    {
+        case Register::ax_id:
+            Register::ax(value);
+            break;
+        case Register::bx_id:
+            Register::bx(value);
+            break;
+        case Register::cx_id:
+            Register::cx(value);
+            break;
+        case Register::dx_id:
+            Register::dx(value);
             break;
         case Register::sp_id:
             Register::sp(value);
@@ -423,6 +431,14 @@ inline void set_register_by_id(uint16_t value)
         case Register::di_id:
             Register::di(value);
             break;
+    }
+}
+
+template <uint32_t reg>
+inline void set_segment_register_by_id(uint16_t value)
+{
+    switch (reg)
+    {
         case Register::cs_id:
             Register::cs(value);
             break;
@@ -438,170 +454,163 @@ inline void set_register_by_id(uint16_t value)
     }
 }
 
-inline void set_register_by_id(uint32_t reg, uint16_t value)
+template <typename T, uint32_t reg>
+inline void set_register_by_id(const T value)
+{
+    if constexpr (std::is_same_v<T, uint8_t>)
+    {
+        return set_register_8_by_id<reg>(value);
+    }
+    set_register_16_by_id<reg>(value);
+}
+
+inline void set_register_8_by_id(const uint8_t reg, const uint8_t value)
+{
+    const static std::array<void (*)(uint8_t), 8> reg_map = {&Register::al, &Register::cl, &Register::dl,
+                                                             &Register::bl, &Register::ah, &Register::ch,
+                                                             &Register::dh, &Register::bh};
+
+    reg_map[reg](value);
+}
+
+
+inline void set_register_16_by_id(uint8_t reg, uint16_t value)
+{
+    const static std::array<void (*)(uint16_t), 8> reg_map = {&Register::ax, &Register::cx, &Register::dx,
+                                                              &Register::bx, &Register::sp, &Register::bp,
+                                                              &Register::si, &Register::di};
+
+    reg_map[reg](value);
+}
+
+inline void set_segment_register_by_id(uint8_t reg, uint16_t value)
+{
+    const static std::array<void (*)(uint16_t), 4> reg_map = {&Register::es, &Register::cs, &Register::ss,
+                                                              &Register::ds};
+    reg_map[reg](value);
+}
+
+inline uint8_t get_register_8_by_id(uint8_t reg)
+{
+    const static std::array<uint8_t (*)(), 8> reg_map = {&Register::al, &Register::cl, &Register::dl,
+                                                         &Register::bl, &Register::ah, &Register::ch,
+                                                         &Register::dh, &Register::bh};
+    return reg_map[reg]();
+}
+
+
+inline uint16_t get_register_16_by_id(uint8_t reg)
+{
+    const static std::array<uint16_t (*)(), 8> reg_map = {&Register::ax, &Register::cx, &Register::dx,
+                                                          &Register::bx, &Register::sp, &Register::bp,
+                                                          &Register::si, &Register::di};
+
+    return reg_map[reg]();
+}
+
+inline uint16_t get_segment_register_by_id(uint8_t reg)
+{
+    const static std::array<uint16_t (*)(), 4> reg_map = {&Register::es, &Register::cs, &Register::ss,
+                                                          &Register::ds};
+
+    return reg_map[reg]();
+}
+
+template <uint32_t reg>
+inline uint8_t get_register_8_by_id()
+{
+    switch (reg)
+    {
+        case Register::al_id:
+            return Register::al();
+        case Register::ah_id:
+            return Register::ah();
+        case Register::bl_id:
+            return Register::bl();
+        case Register::bh_id:
+            return Register::bh();
+        case Register::cl_id:
+            return Register::cl();
+        case Register::ch_id:
+            return Register::ch();
+        case Register::dl_id:
+            return Register::dl();
+        case Register::dh_id:
+            return Register::dh();
+    }
+    return std::numeric_limits<uint8_t>::max();
+}
+
+
+template <uint32_t reg>
+inline uint16_t get_register_16_by_id()
 {
     switch (reg)
     {
         case Register::ax_id:
-            Register::ax(value);
-            break;
-        case Register::al_id:
-            Register::al(static_cast<uint8_t>(value));
-            break;
-        case Register::ah_id:
-            Register::ah(static_cast<uint8_t>(value));
-            break;
+            return Register::ax();
         case Register::bx_id:
-            Register::bx(value);
-            break;
-        case Register::bl_id:
-            Register::bl(static_cast<uint8_t>(value));
-            break;
-        case Register::bh_id:
-            Register::bh(static_cast<uint8_t>(value));
-            break;
+            return Register::bx();
         case Register::cx_id:
-            Register::cx(value);
-            break;
-        case Register::cl_id:
-            Register::cl(static_cast<uint8_t>(value));
-            break;
-        case Register::ch_id:
-            Register::ch(static_cast<uint8_t>(value));
-            break;
+            return Register::cx();
         case Register::dx_id:
-            Register::dx(value);
-            break;
-        case Register::dl_id:
-            Register::dl(static_cast<uint8_t>(value));
-            break;
-        case Register::dh_id:
-            Register::dh(static_cast<uint8_t>(value));
-            break;
+            return Register::dx();
         case Register::sp_id:
-            Register::sp(value);
-            break;
+            return Register::sp();
         case Register::bp_id:
-            Register::bp(value);
-            break;
+            return Register::bp();
         case Register::si_id:
-            Register::si(value);
-            break;
+            return Register::si();
         case Register::di_id:
-            Register::di(value);
-            break;
-        case Register::cs_id:
-            Register::cs(value);
-            break;
-        case Register::ds_id:
-            Register::ds(value);
-            break;
-        case Register::ss_id:
-            Register::ss(value);
-            break;
-        case Register::es_id:
-            Register::es(value);
-            break;
+            return Register::di();
     }
+    return std::numeric_limits<uint16_t>::max();
 }
 
-template <uint32_t reg, typename T>
+template <typename T, uint32_t reg>
 inline T get_register_by_id()
 {
-    switch (reg)
+    if constexpr (std::is_same_v<T, uint8_t>)
     {
-        case Register::ax_id:
-            return static_cast<T>(Register::ax());
-        case Register::al_id:
-            return static_cast<T>(Register::al());
-        case Register::ah_id:
-            return static_cast<T>(Register::ah());
-        case Register::bx_id:
-            return static_cast<T>(Register::bx());
-        case Register::bl_id:
-            return static_cast<T>(Register::bl());
-        case Register::bh_id:
-            return static_cast<T>(Register::bh());
-        case Register::cx_id:
-            return static_cast<T>(Register::cx());
-        case Register::cl_id:
-            return static_cast<T>(Register::cl());
-        case Register::ch_id:
-            return static_cast<T>(Register::ch());
-        case Register::dx_id:
-            return static_cast<T>(Register::dx());
-        case Register::dl_id:
-            return static_cast<T>(Register::dl());
-        case Register::dh_id:
-            return static_cast<T>(Register::dh());
-        case Register::sp_id:
-            return static_cast<T>(Register::sp());
-        case Register::bp_id:
-            return static_cast<T>(Register::bp());
-        case Register::si_id:
-            return static_cast<T>(Register::si());
-        case Register::di_id:
-            return static_cast<T>(Register::di());
-        case Register::cs_id:
-            return static_cast<T>(Register::cs());
-        case Register::ds_id:
-            return static_cast<T>(Register::ds());
-        case Register::ss_id:
-            return static_cast<T>(Register::ss());
-        case Register::es_id:
-            return static_cast<T>(Register::es());
+        return static_cast<T>(get_register_8_by_id<reg>());
     }
-    return std::numeric_limits<T>::max();
+    return static_cast<T>(get_register_16_by_id<reg>());
 }
 
-
-template <typename T>
-inline T get_register_by_id(uint32_t reg)
+inline uint16_t get_segment_register_by_id(uint32_t reg)
 {
     switch (reg)
     {
-        case Register::ax_id:
-            return static_cast<T>(Register::ax());
-        case Register::al_id:
-            return static_cast<T>(Register::al());
-        case Register::ah_id:
-            return static_cast<T>(Register::ah());
-        case Register::bx_id:
-            return static_cast<T>(Register::bx());
-        case Register::bl_id:
-            return static_cast<T>(Register::bl());
-        case Register::bh_id:
-            return static_cast<T>(Register::bh());
-        case Register::cx_id:
-            return static_cast<T>(Register::cx());
-        case Register::cl_id:
-            return static_cast<T>(Register::cl());
-        case Register::ch_id:
-            return static_cast<T>(Register::ch());
-        case Register::dx_id:
-            return static_cast<T>(Register::dx());
-        case Register::dl_id:
-            return static_cast<T>(Register::dl());
-        case Register::dh_id:
-            return static_cast<T>(Register::dh());
-        case Register::sp_id:
-            return static_cast<T>(Register::sp());
-        case Register::bp_id:
-            return static_cast<T>(Register::bp());
-        case Register::si_id:
-            return static_cast<T>(Register::si());
-        case Register::di_id:
-            return static_cast<T>(Register::di());
-        case Register::cs_id:
-            return static_cast<T>(Register::cs());
-        case Register::ds_id:
-            return static_cast<T>(Register::ds());
-        case Register::ss_id:
-            return static_cast<T>(Register::ss());
         case Register::es_id:
-            return static_cast<T>(Register::es());
+            return Register::es();
+        case Register::cs_id:
+            return Register::cs();
+        case Register::ss_id:
+            return Register::ss();
+        case Register::ds_id:
+            return Register::ds();
     }
-    return std::numeric_limits<T>::max();
+    return std::numeric_limits<uint16_t>::max();
+}
+
+template <typename T>
+T get_register_by_id(uint8_t from)
+{
+    if constexpr (std::is_same_v<T, uint8_t>)
+    {
+        return static_cast<T>(get_register_8_by_id(from));
+    }
+    return static_cast<T>(get_register_16_by_id(from));
+}
+
+template <typename T>
+void set_register_by_id(const uint8_t reg, const T value)
+{
+    if constexpr (std::is_same_v<T, uint8_t>)
+    {
+        return set_register_8_by_id(reg, value);
+    }
+    set_register_16_by_id(reg, value);
 }
 
 

@@ -1276,7 +1276,7 @@ auto get_mov_test_parameters()
                              imm8_to_reg(0xbc, &Registers::sp), imm8_to_reg(0xbd, &Registers::bp),
                              imm8_to_reg(0xbe, &Registers::si), imm8_to_reg(0xbf, &Registers::di),
                              modmr_to_reg8(0x8a), reg8_to_modmr(0x88), modmr_to_reg16(0x8b),
-                             reg16_to_modmr(0x89), modmr_to_sreg(0x8c), sreg_to_modmr(0x8e),
+                             reg16_to_modmr(0x89), modmr_to_sreg(0x8e), sreg_to_modmr(0x8c),
                              imm8_to_modmr(0xc6), imm16_to_modmr(0xc7));
 }
 

@@ -124,116 +124,6 @@ protected:
         last_instruction_cost_ = 0;
     }
 
-    template <uint32_t reg, typename T>
-    void _mov_imm_to_reg()
-    {
-        Register::increment_ip(1);
-        const T data = memory_.template read<T>(Register::ip());
-        Register::increment_ip(sizeof(T));
-        set_register_by_id<reg>(data);
-        last_instruction_cost_ = 4;
-    }
-
-    template <uint32_t reg, typename T>
-    void _mov_mem_to_reg()
-    {
-        Register::increment_ip(1);
-        const uint16_t address = memory_.template read<uint16_t>(Register::ip());
-        Register::increment_ip(2);
-
-        const T value = memory_.template read<T>(address);
-
-        set_register_by_id<reg>(value);
-        if constexpr (reg == Register::ax_id || reg == Register::al_id || reg == Register::ah_id)
-        {
-            last_instruction_cost_ = 14;
-        }
-        else
-        {
-            last_instruction_cost_ = 13 + get_cost(AccessCost::Direct);
-        }
-    }
-
-    template <uint32_t reg, typename T>
-    void _mov_reg_to_mem()
-    {
-        Register::increment_ip(1);
-        const uint16_t address = memory_.template read<uint16_t>(Register::ip());
-        Register::increment_ip(2);
-        const T value = get_register_by_id<reg, T>();
-        memory_.write(address, value);
-
-        if constexpr (reg == Register::al_id || reg == Register::ah_id || reg == Register::ax_id)
-        {
-            last_instruction_cost_ = 14;
-        }
-        else
-        {
-            last_instruction_cost_ = 13 + get_cost(AccessCost::Direct);
-        }
-    }
-
-    template <typename T>
-    void _mov_byte_reg_to_modmr()
-    {
-        Register::increment_ip(1);
-        uint8_t modmr = memory_.template read<uint8_t>(Register::ip());
-        Register::increment_ip(1);
-        const ModRM mod(modmr);
-        uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset = 0;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 1)
-        {
-            offset = memory_.template read<uint8_t>(Register::ip());
-            Register::increment_ip(1);
-        }
-        else if (mod.mod == 2)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 3)
-        {
-            offset = 0;
-        }
-
-        uint32_t from_reg = 0;
-        uint32_t to_reg   = 0;
-
-        if constexpr (std::is_same_v<uint8_t, T>)
-        {
-            from_reg = mod8_id(mod.reg);
-            to_reg   = mod8_id(mod.rm);
-        }
-        else
-        {
-            from_reg = mod16_id(mod.reg);
-            to_reg   = mod16_id(mod.rm);
-        }
-
-
-        if (mode < 3)
-        {
-            auto to_address = modes.modes[mode][mod.rm](offset);
-
-            const T value = get_register_by_id<T>(from_reg);
-            memory_.write(to_address, value);
-
-            last_instruction_cost_ = static_cast<uint16_t>(13 + modes.costs[mod.mod][mod.rm]);
-        }
-        else // reg to reg
-        {
-            const T value = get_register_by_id<T>(from_reg);
-            set_register_by_id(to_reg, value);
-            last_instruction_cost_ = 2;
-        }
-    }
-
     uint32_t mod8_id(uint8_t m)
     {
         switch (m)
@@ -299,15 +189,117 @@ protected:
     }
 
     template <typename T>
-    void _mov_byte_modmr_to_reg()
+    inline T read_reg_mem(const ModRM mod, const uint16_t offset)
+    {
+        if (mod.mod < 3)
+        {
+            const auto from_address = modes.modes[mod.mod][mod.rm](offset);
+            last_instruction_cost_  = 12 + modes.costs[mod.mod][mod.rm];
+            return memory_.template read<uint16_t>(from_address);
+        }
+
+        last_instruction_cost_ = 2;
+        return get_register_by_id<T>(mod.rm);
+    }
+
+    template <typename T>
+    inline void write_modmr(const ModRM mod, const uint16_t offset, const T value)
+    {
+        if (mod.mod < 3)
+        {
+            const auto to_address = modes.modes[mod.mod][mod.rm](offset);
+            memory_.write(to_address, value);
+            last_instruction_cost_ = 13 + modes.costs[mod.mod][mod.rm];
+            return;
+        }
+
+        set_register_by_id<T>(mod.rm, value);
+        last_instruction_cost_ = 2;
+    }
+
+    template <typename T>
+    inline void write_modmr_imm(const ModRM mod, const uint16_t offset, const T value)
+    {
+        if (mod.mod < 3)
+        {
+            const auto to_address = modes.modes[mod.mod][mod.rm](offset);
+            memory_.write(to_address, value);
+            last_instruction_cost_ = 14 + modes.costs[mod.mod][mod.rm];
+            return;
+        }
+        set_register_by_id<T>(mod.rm, value);
+        last_instruction_cost_ = 4;
+    }
+
+    template <typename T>
+    inline T read_modmr(const ModRM mod, const uint16_t offset)
+    {
+        if (mod.mod < 3)
+        {
+            const auto from_address = modes.modes[mod.mod][mod.rm](offset);
+            last_instruction_cost_  = static_cast<uint8_t>(12 + modes.costs[mod.mod][mod.rm]);
+            return memory_.template read<T>(from_address);
+        }
+
+        last_instruction_cost_ = 2;
+        return get_register_by_id<T>(mod.rm);
+    }
+
+    template <uint32_t reg, typename T>
+    void _mov_imm_to_reg()
     {
         Register::increment_ip(1);
-        uint8_t modmr = memory_.template read<uint8_t>(Register::ip());
+        const T data = memory_.template read<T>(Register::ip());
+        Register::increment_ip(sizeof(T));
+        set_register_by_id<T, reg>(data);
+        last_instruction_cost_ = 4;
+    }
+
+    template <uint32_t reg, typename T>
+    void _mov_mem_to_reg()
+    {
         Register::increment_ip(1);
-        const ModRM mod(modmr);
-        uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
+        const uint16_t address = memory_.template read<uint16_t>(Register::ip());
+        Register::increment_ip(2);
+
+        const T value = memory_.template read<T>(address);
+
+        set_register_by_id<T, reg>(value);
+        if constexpr (reg == Register::ax_id || reg == Register::al_id || reg == Register::ah_id)
+        {
+            last_instruction_cost_ = 14;
+        }
+        else
+        {
+            last_instruction_cost_ = 12 + get_cost(AccessCost::Direct);
+        }
+    }
+
+    template <uint32_t reg, typename T>
+    void _mov_reg_to_mem()
+    {
+        Register::increment_ip(1);
+        const uint16_t address = memory_.template read<uint16_t>(Register::ip());
+        Register::increment_ip(2);
+        const T value = get_register_by_id<T, reg>();
+        memory_.write(address, value);
+
+        if constexpr (reg == Register::al_id || reg == Register::ah_id || reg == Register::ax_id)
+        {
+            last_instruction_cost_ = 14;
+        }
+        else
+        {
+            last_instruction_cost_ = 13 + get_cost(AccessCost::Direct);
+        }
+    }
+
+    inline std::pair<uint16_t, ModRM> process_modrm() const
+    {
+        const ModRM mod = memory_.template read<uint8_t>(Register::ip());
+        Register::increment_ip(1);
         uint16_t offset = 0;
-        if (mod.mod == 0 && mod.rm == 0x06)
+        if ((mod.mod == 0 && mod.rm == 0x06) || mod.mod == 2)
         {
             offset = memory_.template read<uint16_t>(Register::ip());
             Register::increment_ip(2);
@@ -317,208 +309,58 @@ protected:
             offset = memory_.template read<uint8_t>(Register::ip());
             Register::increment_ip(1);
         }
-        else if (mod.mod == 2)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 3)
-        {
-            offset = 0;
-        }
+        return std::pair<uint16_t, ModRM>(offset, mod);
+    }
+
+    template <typename T>
+    void _mov_byte_reg_to_modmr()
+    {
+        Register::increment_ip(1);
+
+        const auto [offset, mod] = process_modrm();
+
+        const T value = get_register_by_id<T>(mod.reg);
+        write_modmr<T>(mod, offset, value);
+    }
 
 
-        auto to_reg = mod8_id(mod.reg);
-        if constexpr (std::is_same_v<uint16_t, T>)
-        {
-            to_reg = mod16_id(mod.reg);
-        }
-        if (mode < 3)
-        {
-            auto from_address = modes.modes[mode][mod.rm](offset);
-            if constexpr (std::is_same_v<uint8_t, T>)
-            {
-                const uint8_t v = memory_.template read<uint8_t>(from_address);
-                set_register_by_id(to_reg, v);
-            }
-            else
-            {
-                const uint16_t v = memory_.template read<uint16_t>(from_address);
-                set_register_by_id(to_reg, v);
-            }
-            last_instruction_cost_ = static_cast<uint8_t>(12 + modes.costs[mod.mod][mod.rm]);
-        }
-        else // reg to reg
-        {
-            if constexpr (std::is_same_v<uint8_t, T>)
-            {
-                auto from_reg = mod8_id(mod.rm);
-                uint8_t v     = get_register_by_id<uint8_t>(from_reg);
-                set_register_by_id(to_reg, v);
-            }
-            else
-            {
-                auto from_reg = mod16_id(mod.rm);
-                uint16_t v    = get_register_by_id<uint16_t>(from_reg);
-                set_register_by_id(to_reg, v);
-            }
-            last_instruction_cost_ = 2;
-        }
+    template <typename T>
+    void _mov_byte_modmr_to_reg()
+    {
+        Register::increment_ip(1);
+        const auto [offset, mod] = process_modrm();
+        const T value            = read_modmr<T>(mod, offset);
+        set_register_by_id<T>(mod.reg, value);
     }
 
     template <typename T>
     void _mov_byte_imm_to_modmr()
     {
         Register::increment_ip(1);
-        uint8_t modmr = memory_.template read<uint8_t>(Register::ip());
-        Register::increment_ip(1);
-        const ModRM mod(modmr);
-        uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset = 0;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 1)
-        {
-            offset = memory_.template read<uint8_t>(Register::ip());
-            Register::increment_ip(1);
-        }
-        else if (mod.mod == 2)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 3)
-        {
-            offset = 0;
-        }
-        T data = {};
-        if constexpr (std::is_same_v<T, uint16_t>)
-        {
-            data = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else
-        {
-            data = memory_.template read<uint8_t>(Register::ip());
-            Register::increment_ip(1);
-        }
+        const auto [offset, mod] = process_modrm();
 
-        if (mode < 3)
-        {
-            auto to_address = modes.modes[mode][mod.rm](offset);
-            memory_.write(to_address, data);
-            last_instruction_cost_ = 14 + modes.costs[mod.mod][mod.rm];
-        }
-        else // imm to reg
-        {
-            if constexpr (std::is_same_v<uint8_t, T>)
-            {
-                auto to_reg = mod8_id(mod.rm);
-                set_register_by_id(to_reg, data);
-            }
-            else
-            {
-                auto to_reg = mod16_id(mod.rm);
-                set_register_by_id(to_reg, data);
-            }
-            last_instruction_cost_ = 4;
-        }
-    }
+        const T value = memory_.template read<T>(Register::ip());
+        Register::increment_ip(sizeof(T));
 
-    void _mov_modrm_to_sreg()
-    {
-        Register::increment_ip(1);
-        uint8_t modmr = memory_.template read<uint8_t>(Register::ip());
-        Register::increment_ip(1);
-        const ModRM mod(modmr);
-        uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset = 0;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 1)
-        {
-            offset = memory_.template read<uint8_t>(Register::ip());
-            Register::increment_ip(1);
-        }
-        else if (mod.mod == 2)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 3)
-        {
-            offset = 0;
-        }
-        auto from_sreg = sreg_id(mod.reg);
-
-        if (mode < 3)
-        {
-            auto to_address      = modes.modes[mode][mod.rm](offset);
-            const uint16_t value = get_register_by_id<uint16_t>(from_sreg);
-            memory_.write(to_address, value);
-            last_instruction_cost_ = 13 + modes.costs[mod.mod][mod.rm];
-        }
-        else // reg to reg
-        {
-            auto to_reg      = mod16_id(mod.rm);
-            const auto value = get_register_by_id<uint16_t>(from_sreg);
-            set_register_by_id(to_reg, value);
-            last_instruction_cost_ = 2;
-        }
+        write_modmr_imm<T>(mod, offset, value);
     }
 
     void _mov_sreg_to_modrm()
     {
         Register::increment_ip(1);
-        const uint8_t modmr = memory_.template read<uint8_t>(Register::ip());
-        Register::increment_ip(1);
-        const ModRM mod(modmr);
-        uint8_t mode    = mod.mod == 0x01 || mod.mod == 0x02 ? 1 : mod.mod;
-        uint16_t offset = 0;
-        if (mod.mod == 0 && mod.rm == 0x06)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 1)
-        {
-            offset = memory_.template read<uint8_t>(Register::ip());
-            Register::increment_ip(1);
-        }
-        else if (mod.mod == 2)
-        {
-            offset = memory_.template read<uint16_t>(Register::ip());
-            Register::increment_ip(2);
-        }
-        else if (mod.mod == 3)
-        {
-            offset = 0;
-        }
-        //
-        //
-        auto to_sreg = sreg_id(mod.reg);
-        if (mode < 3)
-        {
-            auto from_address = modes.modes[mode][mod.rm](offset);
-            const auto value  = memory_.template read<uint16_t>(from_address);
-            set_register_by_id(to_sreg, value);
-            last_instruction_cost_ = 12 + modes.costs[mod.mod][mod.rm];
-        }
-        else // reg to reg
-        {
-            auto from_reg        = mod16_id(mod.rm);
-            const uint16_t value = get_register_by_id<uint16_t>(from_reg);
-            set_register_by_id(to_sreg, value);
-            last_instruction_cost_ = 2;
-        }
+        const auto [offset, mod] = process_modrm();
+        const uint16_t value     = get_segment_register_by_id(mod.reg);
+        write_modmr(mod, offset, value);
     }
-    //
+
+    void _mov_modrm_to_sreg()
+    {
+        Register::increment_ip(1);
+        const auto [offset, mod] = process_modrm();
+
+        const uint16_t value = read_reg_mem<uint16_t>(mod, offset);
+        set_segment_register_by_id(mod.reg, value);
+    }
 
     struct MoveOperand
     {

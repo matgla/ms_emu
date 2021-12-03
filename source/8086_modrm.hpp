@@ -31,10 +31,7 @@ using Costs             = std::array<uint8_t, 8>;
 
 struct Modes
 {
-    std::array<AddressGenerators, 2> modes;
-    // std::array<uint16_t Registers::*, 8> reg16;
-    // std::array<uint16_t Registers::*, 8> reg8;
-    // std::array<uint16_t Registers::*, 4> sreg;
+    std::array<AddressGenerators, 3> modes;
     std::array<Costs, 4> costs;
 };
 
@@ -76,22 +73,14 @@ constexpr static inline Modes modes{
     .modes =
         {
             AddressGenerators{
-                [](uint16_t) -> uint32_t {
-                    return static_cast<uint32_t>(Register::bx()) +
-                           static_cast<uint32_t>(Register::si());
-                },
-                [](uint16_t) -> uint32_t {
-                    return static_cast<uint32_t>(Register::bx()) +
-                           static_cast<uint32_t>(Register::di());
-                },
-                [](uint16_t) -> uint32_t {
-                    return static_cast<uint32_t>(Register::bp()) +
-                           static_cast<uint32_t>(Register::si());
-                },
-                [](uint16_t) -> uint32_t {
-                    return static_cast<uint32_t>(Register::bp()) +
-                           static_cast<uint32_t>(Register::di());
-                },
+                [](uint16_t) -> uint32_t
+                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::si()); },
+                [](uint16_t) -> uint32_t
+                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::di()); },
+                [](uint16_t) -> uint32_t
+                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::si()); },
+                [](uint16_t) -> uint32_t
+                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::di()); },
                 [](uint16_t) -> uint32_t { return Register::si(); },
                 [](uint16_t) -> uint32_t { return Register::di(); },
                 [](uint16_t address) -> uint32_t { return address; },
@@ -100,45 +89,64 @@ constexpr static inline Modes modes{
             {
                 [](uint16_t address) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bx()) +
-                           static_cast<uint32_t>(Register::si()) +
+                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::si()) +
                            static_cast<uint32_t>(address);
                 },
                 [](uint16_t address) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bx()) +
-                           static_cast<uint32_t>(Register::di()) +
+                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::di()) +
                            static_cast<uint32_t>(address);
                 },
                 [](uint16_t address) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bp()) +
-                           static_cast<uint32_t>(Register::si()) +
+                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::si()) +
                            static_cast<uint32_t>(address);
                 },
                 [](uint16_t address) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bp()) +
-                           static_cast<uint32_t>(Register::di()) +
+                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::di()) +
                            static_cast<uint32_t>(address);
                 },
-                [](uint16_t address) -> uint32_t {
-                    return static_cast<uint32_t>(Register::si()) +
-                           static_cast<uint32_t>(address);
-                },
-                [](uint16_t address) -> uint32_t {
-                    return static_cast<uint32_t>(Register::di()) +
-                           static_cast<uint32_t>(address);
-                },
-                [](uint16_t address) -> uint32_t {
-                    return static_cast<uint32_t>(Register::bp()) +
-                           static_cast<uint32_t>(address);
-                },
-                [](uint16_t address) -> uint32_t {
-                    return static_cast<uint32_t>(Register::bx()) +
-                           static_cast<uint32_t>(address);
-                },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::si()) + static_cast<uint32_t>(address); },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::di()) + static_cast<uint32_t>(address); },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(address); },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(address); },
             },
+            {
+                [](uint16_t address) -> uint32_t
+                {
+                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::si()) +
+                           static_cast<uint32_t>(address);
+                },
+                [](uint16_t address) -> uint32_t
+                {
+                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::di()) +
+                           static_cast<uint32_t>(address);
+                },
+                [](uint16_t address) -> uint32_t
+                {
+                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::si()) +
+                           static_cast<uint32_t>(address);
+                },
+                [](uint16_t address) -> uint32_t
+                {
+                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::di()) +
+                           static_cast<uint32_t>(address);
+                },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::si()) + static_cast<uint32_t>(address); },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::di()) + static_cast<uint32_t>(address); },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(address); },
+                [](uint16_t address) -> uint32_t
+                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(address); },
+            },
+
         },
     .costs = {
         Costs{7, 8, 8, 7, 5, 5, 6, 5},

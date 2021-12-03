@@ -6,6 +6,7 @@ target_sources(msemu_tests
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/cpu8086_for_test.hpp
     PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/add_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/mov_tests.cpp
 )
 
