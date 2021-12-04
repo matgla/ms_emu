@@ -1,0 +1,13 @@
+#+title: BIOS for MSEMU 8086 emulator 
+#+author: Mateusz Stadnik 
+#+date: [2021-12-4 Sat] 
+
+** Brief 
+This is special version of BIOS which forwards bios interrupts to emulator. 
+With that solution performance should be quite better. 
+
+** Magic opcode for hybird call 
+0xc0
+
+** TODO Find C compiler for 8086/8088 
+* Easier to do with pure assembly

@@ -68,6 +68,8 @@ int main(int argc, const char* argv[])
 
     disable_buffered_io();
     setlocale(LC_CTYPE, "");
+
+    printf("ROM loaded\n");
     char c = '\n';
     while (c != 27)
     {

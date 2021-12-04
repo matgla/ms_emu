@@ -44,6 +44,9 @@ public:
             set_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl);
         }
 
+        // add group
+        // set_opcode(0x14, &Cpu::_adc_imm_to_acc<uint8_t>);
+
         // mov group
         set_opcode(0xa0, &Cpu::_mov_mem_to_reg<Register::al_id, uint8_t>);
         set_opcode(0xa1, &Cpu::_mov_mem_to_reg<Register::ax_id, uint16_t>);
@@ -124,69 +127,6 @@ protected:
         last_instruction_cost_ = 0;
     }
 
-    uint32_t mod8_id(uint8_t m)
-    {
-        switch (m)
-        {
-            case 0:
-                return Register::al_id;
-            case 1:
-                return Register::cl_id;
-            case 2:
-                return Register::dl_id;
-            case 3:
-                return Register::bl_id;
-            case 4:
-                return Register::ah_id;
-            case 5:
-                return Register::ch_id;
-            case 6:
-                return Register::dh_id;
-            case 7:
-                return Register::bh_id;
-        }
-        return 0;
-    }
-
-    uint32_t mod16_id(uint8_t m)
-    {
-        switch (m)
-        {
-            case 0:
-                return Register::ax_id;
-            case 1:
-                return Register::cx_id;
-            case 2:
-                return Register::dx_id;
-            case 3:
-                return Register::bx_id;
-            case 4:
-                return Register::sp_id;
-            case 5:
-                return Register::bp_id;
-            case 6:
-                return Register::si_id;
-            case 7:
-                return Register::di_id;
-        }
-        return 0;
-    }
-
-    uint32_t sreg_id(uint8_t m)
-    {
-        switch (m)
-        {
-            case 0:
-                return Register::es_id;
-            case 1:
-                return Register::cs_id;
-            case 2:
-                return Register::ss_id;
-            case 3:
-                return Register::ds_id;
-        }
-        return 0;
-    }
 
     template <typename T>
     inline T read_reg_mem(const ModRM mod, const uint16_t offset)
