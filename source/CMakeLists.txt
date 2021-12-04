@@ -1,14 +1,16 @@
 add_executable(msemu)
 
-add_library(msemu_cpu8086 INTERFACE)
+add_library(msemu_cpu8086 STATIC)
 
 target_sources(msemu_cpu8086 
-    INTERFACE 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/8086_cpu.hpp 
         ${CMAKE_CURRENT_SOURCE_DIR}/memory.hpp 
+    PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/8086_registers.cpp
 )
 
-target_link_libraries(msemu_cpu8086 INTERFACE msemu_private_flags)
+target_link_libraries(msemu_cpu8086 PRIVATE msemu_private_flags)
 
 target_sources(msemu
     PRIVATE 
@@ -33,7 +35,7 @@ target_link_libraries(msemu
         # pico_stdlib
 )
 
-if (PRINT_CORE_STATUS)
+if (DUMP_CORE_STATE)
     target_compile_definitions(msemu PRIVATE -DDUMP_CORE_STATE)
 endif ()
 

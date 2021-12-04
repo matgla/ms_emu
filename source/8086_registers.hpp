@@ -17,31 +17,13 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 namespace msemu::cpu8086
 {
-
-#ifdef PICO
-register uint32_t r5 asm("r5");
-register uint32_t r6 asm("r6");
-register uint32_t r7 asm("r7");
-register uint32_t r8 asm("r8");
-register uint32_t r9 asm("r9");
-register uint16_t r10 asm("r10");
-register uint32_t r11 asm("r11");
-
-
-#else
-uint32_t r5  = 0;
-uint32_t r6  = 0;
-uint32_t r7  = 0;
-uint32_t r8  = 0;
-uint32_t r9  = 0;
-uint16_t r10 = 0;
-uint32_t r11 = 0;
-#endif
 
 #define set_reg8(reg, val, mask, offset)                                                                     \
     {                                                                                                        \
@@ -59,9 +41,160 @@ uint32_t r11 = 0;
 
 #define get_reg16(reg, mask, offset) (static_cast<uint16_t>((reg >> offset) & 0xffff))
 
+struct Flags
+{
+private:
+#ifdef PICO
+    register uint32_t r4 asm("r4");
+#else
+    static inline uint32_t r4;
+#endif
+
+
+    constexpr static uint16_t cy_bit_offset = 0;
+    constexpr static uint16_t cy_mask       = 0b0000000000000001;
+    constexpr static uint16_t p_bit_offset  = 2;
+    constexpr static uint16_t p_mask        = 0b0000000000000100;
+    constexpr static uint16_t ax_bit_offset = 4;
+    constexpr static uint16_t ax_mask       = 0b0000000000010000;
+    constexpr static uint16_t z_bit_offset  = 6;
+    constexpr static uint16_t z_mask        = 0b0000000001000000;
+    constexpr static uint16_t s_bit_offset  = 7;
+    constexpr static uint16_t s_mask        = 0b0000000010000000;
+    constexpr static uint16_t t_bit_offset  = 8;
+    constexpr static uint16_t t_mask        = 0b0000000100000000;
+    constexpr static uint16_t i_bit_offset  = 9;
+    constexpr static uint16_t i_mask        = 0b0000001000000000;
+    constexpr static uint16_t d_bit_offset  = 10;
+    constexpr static uint16_t d_mask        = 0b0000010000000000;
+    constexpr static uint16_t o_bit_offset  = 11;
+    constexpr static uint16_t o_mask        = 0b0000100000000000;
+
+
+    template <uint16_t mask>
+    inline static bool get_flag()
+    {
+        return r4 & mask;
+    }
+
+    template <uint16_t offset>
+    inline static void set_flag(const bool v)
+    {
+        r4 ^= (-v ^ r4) & (1u << offset);
+    }
+
+public:
+    inline static bool cy()
+    {
+        return get_flag<cy_mask>();
+    }
+
+    inline static void cy(const bool v)
+    {
+        set_flag<cy_bit_offset>(v);
+    }
+
+    inline static bool p()
+    {
+        return get_flag<p_mask>();
+    }
+
+    inline static void p(const bool v)
+    {
+        set_flag<p_bit_offset>(v);
+    }
+
+    inline static bool ax()
+    {
+        return get_flag<ax_mask>();
+    }
+
+    inline static void ax(const bool v)
+    {
+        set_flag<ax_bit_offset>(v);
+    }
+
+    inline static bool z()
+    {
+        return get_flag<z_mask>();
+    }
+
+    inline static void z(const bool v)
+    {
+        set_flag<z_bit_offset>(v);
+    }
+
+    inline static bool s()
+    {
+        return get_flag<s_mask>();
+    }
+
+    inline static void s(const bool v)
+    {
+        set_flag<s_bit_offset>(v);
+    }
+
+    inline static bool t()
+    {
+        return get_flag<t_mask>();
+    }
+
+    inline static void t(const bool v)
+    {
+        set_flag<t_bit_offset>(v);
+    }
+
+    inline static bool i()
+    {
+        return get_flag<i_mask>();
+    }
+
+    inline static void i(const bool v)
+    {
+        set_flag<i_bit_offset>(v);
+    }
+
+    inline static bool d()
+    {
+        return get_flag<d_mask>();
+    }
+
+    inline static void d(const bool v)
+    {
+        set_flag<d_bit_offset>(v);
+    }
+
+    inline static bool o()
+    {
+        return get_flag<o_mask>();
+    }
+
+    inline static void o(const bool v)
+    {
+        set_flag<o_bit_offset>(v);
+    }
+};
+
 struct Register
 {
 private:
+#ifdef PICO
+    register uint32_t r5 asm("r5");
+    register uint32_t r6 asm("r6");
+    register uint32_t r7 asm("r7");
+    register uint32_t r8 asm("r8");
+    register uint32_t r9 asm("r9");
+    register uint16_t r10 asm("r10");
+    register uint32_t r11 asm("r11");
+#else
+    static inline uint32_t r5;
+    static inline uint32_t r6;
+    static inline uint32_t r7;
+    static inline uint32_t r8;
+    static inline uint32_t r9;
+    static inline uint16_t r10;
+    static inline uint32_t r11;
+#endif
     constexpr static uint32_t ax_mask   = 0x0000ffff;
     constexpr static uint32_t ax_offset = 0;
     constexpr static uint32_t al_mask   = 0x000000ff;
@@ -367,6 +500,11 @@ public:
     static inline void increment_ip(uint16_t value = 1)
     {
         r10 = r10 + value;
+    }
+
+    static inline Flags flags()
+    {
+        return Flags{};
     }
 };
 

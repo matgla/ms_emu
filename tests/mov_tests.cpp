@@ -25,6 +25,8 @@
 
 #include "cpu8086_for_test.hpp"
 
+#include "test_base.hpp"
+
 namespace msemu::cpu8086
 {
 
@@ -55,18 +57,8 @@ public:
     std::vector<TestData> data = {};
 };
 
-class MovTests : public ::testing::TestWithParam<MovTestsParams>
+class MovTests : public TestBase<MovTestsParams>
 {
-public:
-    MovTests()
-        : memory_()
-        , sut_(memory_)
-    {
-    }
-
-protected:
-    Memory<1024 * 128> memory_;
-    CpuForTest<Memory<1024 * 128>> sut_;
 };
 
 void stringify_array(const auto& data, auto& str)
@@ -156,11 +148,6 @@ TEST_P(MovTests, ProcessCmd)
 
         ++i;
     }
-}
-
-inline std::string generate_test_case_name(const ::testing::TestParamInfo<MovTestsParams>& info)
-{
-    return info.param.name;
 }
 
 inline void PrintTo(const MovTestsParams& reg, ::std::ostream* os)
@@ -1280,6 +1267,12 @@ auto get_mov_test_parameters()
                              imm8_to_modmr(0xc6), imm16_to_modmr(0xc7));
 }
 
+inline std::string generate_test_case_name(const ::testing::TestParamInfo<MovTestsParams>& info)
+{
+    return info.param.name;
+}
+
 INSTANTIATE_TEST_CASE_P(OpcodesMov, MovTests, get_mov_test_parameters(), generate_test_case_name);
+
 
 } // namespace msemu::cpu8086

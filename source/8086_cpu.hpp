@@ -22,6 +22,7 @@
 #include "16_bit_modrm.hpp"
 #include "8086_modrm.hpp"
 #include "8086_registers.hpp"
+#include "core_dump.hpp"
 #include "memory.hpp"
 
 namespace msemu
@@ -83,11 +84,13 @@ public:
         set_opcode(0x8c, &Cpu::_mov_sreg_to_modrm);
         set_opcode(0x8e, &Cpu::_mov_modrm_to_sreg);
 
+        set_opcode(0xeb, &Cpu::_jump_to_address);
+
         set_opcode(0xc3, &Cpu::_unimpl);
 
         reset();
 #ifdef DUMP_CORE_STATE
-        dump();
+        dump(error_msg_, memory_);
 #endif
     }
 
@@ -96,7 +99,7 @@ public:
         op_ = &opcodes_[memory_.template read<uint8_t>(Register::ip())];
         (this->*op_->impl)();
 #ifdef DUMP_CORE_STATE
-        dump();
+        dump(error_msg_, memory_);
 #endif
     }
 
@@ -113,11 +116,6 @@ protected:
         opcodes_[id].impl = fun;
     }
 
-    // debug
-    void get_disassembly_line(char* line, std::size_t max_size, std::size_t& program_counter) const;
-    void dump() const;
-
-
     // core emulation
 
     void _unimpl()
@@ -127,6 +125,14 @@ protected:
         last_instruction_cost_ = 0;
     }
 
+    void _jump_to_address()
+    {
+        Register::increment_ip(1);
+        uint8_t address = memory_.template read<uint8_t>(Register::ip());
+        Register::increment_ip(1);
+        address = static_cast<uint8_t>(address + Register::ip());
+        Register::ip(address);
+    }
 
     template <typename T>
     inline T read_reg_mem(const ModRM mod, const uint16_t offset)
