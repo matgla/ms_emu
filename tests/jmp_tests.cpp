@@ -38,11 +38,12 @@ struct MemoryOp
 struct TestCase
 {
     TestCase(const Registers& regs, const Registers& expect, const std::vector<uint8_t>& command_data,
-             const MemoryOp& memop          = MemoryOp{},
+             const uint8_t instruction_cost, const MemoryOp& memop = MemoryOp{},
              const std::source_location loc = std::source_location::current())
         : regs_init(regs)
         , expect(expect)
         , data(command_data)
+        , cost(instruction_cost)
         , memory_op(memop)
         , location(loc)
     {
@@ -52,6 +53,7 @@ struct TestCase
     Registers regs_init;
     Registers expect;
     std::vector<uint8_t> data;
+    uint8_t cost;
     MemoryOp memory_op;
     std::source_location location;
 };
@@ -98,6 +100,7 @@ TEST_P(JmpTests, ProcessCmd)
         sut_.set_registers(test.regs_init);
         sut_.step();
         EXPECT_EQ(sut_.get_registers(), test.expect) << print_test_case_info(test, sut_.get_error());
+        EXPECT_EQ(sut_.last_instruction_cost(), test.cost) << print_test_case_info(test, sut_.get_error());
     }
 }
 
@@ -106,48 +109,56 @@ const std::vector<TestCase> modrm_jump_short_mod0{
         Registers{.bx = 0x1020, .si = 0x2010},
         Registers{.bx = 0x1020, .si = 0x2010, .ip = 0xbaac},
         {},
+        25,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bx = 0x1020, .di = 0x2010},
         Registers{.bx = 0x1020, .di = 0x2010, .ip = 0xbaac},
         {},
+        26,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.si = 0x2010, .bp = 0x1020},
         Registers{.si = 0x2010, .bp = 0x1020, .ip = 0xbaac},
         {},
+        26,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.di = 0x2010, .bp = 0x1020},
         Registers{.di = 0x2010, .bp = 0x1020, .ip = 0xbaac},
         {},
+        25,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.si = 0x2010},
         Registers{.si = 0x2010, .ip = 0xbaac},
         {},
+        23,
         MemoryOp{.address = 0x2010, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.di = 0x2010},
         Registers{.di = 0x2010, .ip = 0xbaac},
         {},
+        23,
         MemoryOp{.address = 0x2010, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{},
         Registers{.ip = 0xbaac},
         {0x30, 0x20},
+        24,
         MemoryOp{.address = 0x2030, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bx = 0x1020},
         Registers{.bx = 0x1020, .ip = 0xbaac},
         {},
+        23,
         MemoryOp{.address = 0x1020, .data = {0xac, 0xba}},
     },
 };
@@ -157,48 +168,56 @@ const std::vector<TestCase> modrm_jump_short_mod1{
         Registers{.bx = 0x1020, .si = 0x2010},
         Registers{.bx = 0x1020, .si = 0x2010, .ip = 0xbaac},
         {0x05},
+        29,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bx = 0x1020, .di = 0x2010},
         Registers{.bx = 0x1020, .di = 0x2010, .ip = 0xbaac},
         {0x05},
+        30,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.si = 0x2010, .bp = 0x1020},
         Registers{.si = 0x2010, .bp = 0x1020, .ip = 0xbaac},
         {0x05},
+        30,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.di = 0x2010, .bp = 0x1020},
         Registers{.di = 0x2010, .bp = 0x1020, .ip = 0xbaac},
         {0x05},
+        29,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.si = 0x2010},
         Registers{.si = 0x2010, .ip = 0xbaac},
         {0x05},
+        27,
         MemoryOp{.address = 0x2015, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.di = 0x2010},
         Registers{.di = 0x2010, .ip = 0xbaac},
         {0x05},
+        27,
         MemoryOp{.address = 0x2015, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bp = 0x2030},
         Registers{.bp = 0x2030, .ip = 0xbaac},
         {0x20},
+        27,
         MemoryOp{.address = 0x2050, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bx = 0x1020},
         Registers{.bx = 0x1020, .ip = 0xbaac},
         {0x05},
+        27,
         MemoryOp{.address = 0x1025, .data = {0xac, 0xba}},
     },
 };
@@ -209,88 +228,108 @@ const std::vector<TestCase> modrm_jump_short_mod2{
         Registers{.bx = 0x1020, .si = 0x2010},
         Registers{.bx = 0x1020, .si = 0x2010, .ip = 0xbaac},
         {0x05, 0x10},
+        29,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bx = 0x1020, .di = 0x2010},
         Registers{.bx = 0x1020, .di = 0x2010, .ip = 0xbaac},
         {0x05, 0x10},
+        30,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.si = 0x2010, .bp = 0x1020},
         Registers{.si = 0x2010, .bp = 0x1020, .ip = 0xbaac},
         {0x05, 0x10},
+        30,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.di = 0x2010, .bp = 0x1020},
         Registers{.di = 0x2010, .bp = 0x1020, .ip = 0xbaac},
         {0x05, 0x10},
+        29,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.si = 0x2010},
         Registers{.si = 0x2010, .ip = 0xbaac},
         {0x05, 0x10},
+        27,
         MemoryOp{.address = 0x3015, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.di = 0x2010},
         Registers{.di = 0x2010, .ip = 0xbaac},
         {0x05, 0x10},
+        27,
         MemoryOp{.address = 0x3015, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bp = 0x2030},
         Registers{.bp = 0x2030, .ip = 0xbaac},
         {0x20, 0x10},
+        27,
         MemoryOp{.address = 0x3050, .data = {0xac, 0xba}},
     },
     TestCase{
         Registers{.bx = 0x1020},
         Registers{.bx = 0x1020, .ip = 0xbaac},
         {0x05, 0x10},
+        27,
         MemoryOp{.address = 0x2025, .data = {0xac, 0xba}},
     },
 };
 
 const std::vector<TestCase> modrm_jump_short_mod3{
-    TestCase{Registers{.ax = 0x1020}, Registers{.ax = 0x1020, .ip = 0x1020}, {}},
+    TestCase{
+        Registers{.ax = 0x1020},
+        Registers{.ax = 0x1020, .ip = 0x1020},
+        {},
+        11,
+    },
     TestCase{
         Registers{.cx = 0x1020},
         Registers{.cx = 0x1020, .ip = 0x1020},
         {},
+        11,
     },
     TestCase{
         Registers{.dx = 0x2010},
         Registers{.dx = 0x2010, .ip = 0x2010},
         {},
+        11,
     },
     TestCase{
         Registers{.bx = 0x2010},
         Registers{.bx = 0x2010, .ip = 0x2010},
         {},
+        11,
     },
     TestCase{
         Registers{.sp = 0x2010},
         Registers{.sp = 0x2010, .ip = 0x2010},
         {},
+        11,
     },
     TestCase{
         Registers{.bp = 0x2010},
         Registers{.bp = 0x2010, .ip = 0x2010},
         {},
+        11,
     },
     TestCase{
         Registers{.si = 0x2030},
         Registers{.si = 0x2030, .ip = 0x2030},
         {},
+        11,
     },
     TestCase{
         Registers{.di = 0x1020},
         Registers{.di = 0x1020, .ip = 0x1020},
         {},
+        11,
     },
 };
 
@@ -299,48 +338,56 @@ const std::vector<TestCase> modrm_jump_far_mod0{
         Registers{.bx = 0x1020, .si = 0x2010},
         Registers{.bx = 0x1020, .si = 0x2010, .ip = 0xbaac, .cs = 0x2010},
         {},
+        31,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba, 0x10, 0x20}},
     },
     TestCase{
         Registers{.bx = 0x1020, .di = 0x2010},
         Registers{.bx = 0x1020, .di = 0x2010, .ip = 0xbaac, .cs = 0x1020},
         {},
+        32,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba, 0x20, 0x10}},
     },
     TestCase{
         Registers{.si = 0x2010, .bp = 0x1020},
         Registers{.si = 0x2010, .bp = 0x1020, .ip = 0xbaac, .cs = 0x1020},
         {},
+        32,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba, 0x20, 0x10}},
     },
     TestCase{
         Registers{.di = 0x2010, .bp = 0x1020},
         Registers{.di = 0x2010, .bp = 0x1020, .ip = 0xbaac, .cs = 0x1020},
         {},
+        31,
         MemoryOp{.address = 0x3030, .data = {0xac, 0xba, 0x20, 0x10}},
     },
     TestCase{
         Registers{.si = 0x2010},
         Registers{.si = 0x2010, .ip = 0xbaac, .cs = 0x1020},
         {},
+        29,
         MemoryOp{.address = 0x2010, .data = {0xac, 0xba, 0x20, 0x10}},
     },
     TestCase{
         Registers{.di = 0x2010},
         Registers{.di = 0x2010, .ip = 0xbaac, .cs = 0x1020},
         {},
+        29,
         MemoryOp{.address = 0x2010, .data = {0xac, 0xba, 0x20, 0x10}},
     },
     TestCase{
         Registers{},
         Registers{.ip = 0xbaac, .cs = 0x1020},
         {0x30, 0x20},
+        30,
         MemoryOp{.address = 0x2030, .data = {0xac, 0xba, 0x20, 0x10}},
     },
     TestCase{
         Registers{.bx = 0x1020},
         Registers{.bx = 0x1020, .ip = 0xbaac, .cs = 0x1020},
         {},
+        29,
         MemoryOp{.address = 0x1020, .data = {0xac, 0xba, 0x20, 0x10}},
     },
 };
@@ -350,48 +397,56 @@ const std::vector<TestCase> modrm_jump_far_mod1{
         Registers{.bx = 0x1020, .si = 0x2010},
         Registers{.bx = 0x1020, .si = 0x2010, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        35,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.bx = 0x1020, .di = 0x2010},
         Registers{.bx = 0x1020, .di = 0x2010, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        36,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.si = 0x2010, .bp = 0x1020},
         Registers{.si = 0x2010, .bp = 0x1020, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        36,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.di = 0x2010, .bp = 0x1020},
         Registers{.di = 0x2010, .bp = 0x1020, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        35,
         MemoryOp{.address = 0x3035, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.si = 0x2010},
         Registers{.si = 0x2010, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        33,
         MemoryOp{.address = 0x2015, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.di = 0x2010},
         Registers{.di = 0x2010, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        33,
         MemoryOp{.address = 0x2015, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.bp = 0x2030},
         Registers{.bp = 0x2030, .ip = 0xbaac, .cs = 0x1234},
         {0x20},
+        33,
         MemoryOp{.address = 0x2050, .data = {0xac, 0xba, 0x34, 0x12}},
     },
     TestCase{
         Registers{.bx = 0x1020},
         Registers{.bx = 0x1020, .ip = 0xbaac, .cs = 0x1234},
         {0x05},
+        33,
         MemoryOp{.address = 0x1025, .data = {0xac, 0xba, 0x34, 0x12}},
     },
 };
@@ -402,48 +457,56 @@ const std::vector<TestCase> modrm_jump_far_mod2{
         Registers{.bx = 0x1020, .si = 0x2010},
         Registers{.bx = 0x1020, .si = 0x2010, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        35,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.bx = 0x1020, .di = 0x2010},
         Registers{.bx = 0x1020, .di = 0x2010, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        36,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.si = 0x2010, .bp = 0x1020},
         Registers{.si = 0x2010, .bp = 0x1020, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        36,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.di = 0x2010, .bp = 0x1020},
         Registers{.di = 0x2010, .bp = 0x1020, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        35,
         MemoryOp{.address = 0x4035, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.si = 0x2010},
         Registers{.si = 0x2010, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        33,
         MemoryOp{.address = 0x3015, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.di = 0x2010},
         Registers{.di = 0x2010, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        33,
         MemoryOp{.address = 0x3015, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.bp = 0x2030},
         Registers{.bp = 0x2030, .ip = 0xbaac, .cs = 0xface},
         {0x20, 0x10},
+        33,
         MemoryOp{.address = 0x3050, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
     TestCase{
         Registers{.bx = 0x1020},
         Registers{.bx = 0x1020, .ip = 0xbaac, .cs = 0xface},
         {0x05, 0x10},
+        33,
         MemoryOp{.address = 0x2025, .data = {0xac, 0xba, 0xce, 0xfa}},
     },
 };
@@ -504,10 +567,10 @@ auto get_jmp_test_parameters()
             .cmd = 0xeb,
             .cases =
                 {
-                    TestCase{{.ip = 0x00}, {.ip = 0x06}, {0x04}},
-                    TestCase{{.ip = 0x04}, {.ip = 0x00}, {0xfa}},
-                    TestCase{{.ip = 0x09}, {.ip = 0x0d}, {0x02}},
-                    TestCase{{.ip = 0x11}, {.ip = 0x09}, {0xf6}},
+                    TestCase{{.ip = 0x00}, {.ip = 0x06}, {0x04}, 15},
+                    TestCase{{.ip = 0x04}, {.ip = 0x00}, {0xfa}, 15},
+                    TestCase{{.ip = 0x09}, {.ip = 0x0d}, {0x02}, 15},
+                    TestCase{{.ip = 0x11}, {.ip = 0x09}, {0xf6}, 15},
                 },
             .name = "0xeb",
         },
@@ -516,10 +579,10 @@ auto get_jmp_test_parameters()
             .cmd = 0xe9,
             .cases =
                 {
-                    TestCase{{.ip = 0x09}, {.ip = 0x00}, {0xf4, 0xff}},
-                    TestCase{{.ip = 0x0c}, {.ip = 0xffff}, {0xf0, 0xff}},
-                    TestCase{{.ip = 0x0f}, {.ip = 0x5000}, {0xee, 0x4f}},
-                    TestCase{{.ip = 0x12}, {.ip = 0x1234}, {0x1f, 0x12}},
+                    TestCase{{.ip = 0x09}, {.ip = 0x00}, {0xf4, 0xff}, 15},
+                    TestCase{{.ip = 0x0c}, {.ip = 0xffff}, {0xf0, 0xff}, 15},
+                    TestCase{{.ip = 0x0f}, {.ip = 0x5000}, {0xee, 0x4f}, 15},
+                    TestCase{{.ip = 0x12}, {.ip = 0x1234}, {0x1f, 0x12}, 15},
                 },
             .name = "0xe9",
         },
@@ -528,9 +591,9 @@ auto get_jmp_test_parameters()
             .cmd = 0xea,
             .cases =
                 {
-                    TestCase{{.ip = 0x19}, {.ip = 0x1e, .cs = 0x08}, {0x1e, 0x00, 0x08, 0x00}},
-                    TestCase{{.ip = 0x1e}, {.ip = 0x1234, .cs = 0x15}, {0x34, 0x12, 0x15, 0x00}},
-                    TestCase{{.ip = 0x23}, {.ip = 0xffff, .cs = 0xffff}, {0xff, 0xff, 0xff, 0xff}},
+                    TestCase{{.ip = 0x19}, {.ip = 0x1e, .cs = 0x08}, {0x1e, 0x00, 0x08, 0x00}, 15},
+                    TestCase{{.ip = 0x1e}, {.ip = 0x1234, .cs = 0x15}, {0x34, 0x12, 0x15, 0x00}, 15},
+                    TestCase{{.ip = 0x23}, {.ip = 0xffff, .cs = 0xffff}, {0xff, 0xff, 0xff, 0xff}, 15},
                 },
             .name = "0xea",
         },

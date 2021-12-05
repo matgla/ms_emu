@@ -95,8 +95,8 @@ public:
         set_opcode(0x8e, &Cpu::_mov_modrm_to_sreg);
 
         // jumps - unconditional
-        set_opcode(0xeb, &Cpu::_jump_to_address<uint8_t>);
-        set_opcode(0xe9, &Cpu::_jump_to_address<uint16_t>);
+        set_opcode(0xeb, &Cpu::_jump_short<uint8_t>);
+        set_opcode(0xe9, &Cpu::_jump_short<uint16_t>);
         set_opcode(0xea, &Cpu::_jump_far);
 
         set_grp5_opcode(0x04, &Cpu::_jump_short_modrm);
@@ -192,13 +192,14 @@ protected:
     }
 
     template <typename T>
-    void _jump_to_address()
+    void _jump_short()
     {
         Register::increment_ip(1);
         T address = memory_.template read<T>(Register::ip());
         Register::increment_ip(sizeof(T));
         address = static_cast<T>(address + Register::ip());
         Register::ip(address);
+        last_instruction_cost_ = 15;
     }
 
     void _jump_far()
@@ -211,12 +212,13 @@ protected:
 
         Register::ip(ip_address);
         Register::cs(cs_address);
+        last_instruction_cost_ = 15;
     }
 
     void _jump_short_modrm(const ModRM mod)
     {
         const uint16_t disp   = process_modrm(mod);
-        const uint16_t offset = read_modmr<uint16_t>(mod, disp);
+        const uint16_t offset = read_modmr<uint16_t, 18, 11>(mod, disp);
         Register::ip(offset);
     }
 
@@ -229,6 +231,7 @@ protected:
         const uint16_t cs       = memory_.template read<uint16_t>(from_address + 2);
         Register::ip(ip);
         Register::cs(cs);
+        last_instruction_cost_ = static_cast<uint8_t>(24 + modes.costs[mod.mod][mod.rm]);
     }
 
 
@@ -275,17 +278,17 @@ protected:
         last_instruction_cost_ = 4;
     }
 
-    template <typename T>
+    template <typename T, uint8_t mem_cost = 12, uint8_t reg_cost = 2>
     inline T read_modmr(const ModRM mod, const uint16_t offset)
     {
         if (mod.mod < 3)
         {
             const auto from_address = modes.modes[mod.mod][mod.rm](offset);
-            last_instruction_cost_  = static_cast<uint8_t>(12 + modes.costs[mod.mod][mod.rm]);
+            last_instruction_cost_  = static_cast<uint8_t>(mem_cost + modes.costs[mod.mod][mod.rm]);
             return memory_.template read<T>(from_address);
         }
 
-        last_instruction_cost_ = 2;
+        last_instruction_cost_ = reg_cost;
         return get_register_by_id<T>(mod.rm);
     }
 
