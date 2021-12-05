@@ -497,9 +497,14 @@ public:
         r10 = v;
     }
 
-    static inline void increment_ip(uint16_t value = 1)
+    static inline void increment_ip(uint16_t value)
     {
         r10 = r10 + value;
+    }
+
+    static inline void decrement_ip(uint16_t value)
+    {
+        r10 = r10 - value;
     }
 
     static inline Flags flags()

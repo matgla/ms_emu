@@ -35,15 +35,25 @@ class Cpu
 {
 public:
     Cpu(MemoryType& memory)
-        : op_{}
-        , last_instruction_cost_{0}
+        : last_instruction_cost_{0}
         , error_msg_{}
         , memory_{memory}
     {
-        for (uint16_t i = 0; i <= 255; ++i)
+        for (uint16_t i = 0; i < 256; ++i)
         {
             set_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl);
         }
+
+        for (uint16_t i = 0; i < 8; ++i)
+        {
+            set_grp1_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp2_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp3a_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp3b_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp4_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp5_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+        }
+
 
         // add group
         // set_opcode(0x14, &Cpu::_adc_imm_to_acc<uint8_t>);
@@ -84,8 +94,16 @@ public:
         set_opcode(0x8c, &Cpu::_mov_sreg_to_modrm);
         set_opcode(0x8e, &Cpu::_mov_modrm_to_sreg);
 
-        set_opcode(0xeb, &Cpu::_jump_to_address);
+        // jumps - unconditional
+        set_opcode(0xeb, &Cpu::_jump_to_address<uint8_t>);
+        set_opcode(0xe9, &Cpu::_jump_to_address<uint16_t>);
+        set_opcode(0xea, &Cpu::_jump_far);
 
+        set_grp5_opcode(0x04, &Cpu::_jump_short_modrm);
+        set_grp5_opcode(0x05, &Cpu::_jump_far_modrm);
+
+
+        set_opcode(0xff, &Cpu::_grp5_process);
         set_opcode(0xc3, &Cpu::_unimpl);
 
         reset();
@@ -96,8 +114,8 @@ public:
 
     void step()
     {
-        op_ = &opcodes_[memory_.template read<uint8_t>(Register::ip())];
-        (this->*op_->impl)();
+        const auto* op = &opcodes_[memory_.template read<uint8_t>(Register::ip())];
+        (this->*op->impl)();
 #ifdef DUMP_CORE_STATE
         dump(error_msg_, memory_);
 #endif
@@ -106,7 +124,6 @@ public:
     void reset()
     {
         Register::reset();
-        op_ = &opcodes_[memory_.template read<uint8_t>(0)];
     }
 
 protected:
@@ -115,6 +132,37 @@ protected:
     {
         opcodes_[id].impl = fun;
     }
+
+    void set_grp1_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp1_opcodes_[id].impl = fun;
+    }
+
+    void set_grp2_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp2_opcodes_[id].impl = fun;
+    }
+
+    void set_grp3a_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp3a_opcodes_[id].impl = fun;
+    }
+
+    void set_grp3b_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp3b_opcodes_[id].impl = fun;
+    }
+
+    void set_grp4_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp4_opcodes_[id].impl = fun;
+    }
+
+    void set_grp5_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp5_opcodes_[id].impl = fun;
+    }
+
 
     // core emulation
 
@@ -125,14 +173,64 @@ protected:
         last_instruction_cost_ = 0;
     }
 
+    void _unimpl_extra(const ModRM mod)
+    {
+        Register::decrement_ip(2);
+        snprintf(error_msg_, sizeof(error_msg_), "Opcode: 0x%x is unimplemented!, modrm: 0x%02x\n",
+                 memory_.template read<uint8_t>(Register::ip()), static_cast<uint8_t>(mod));
+        last_instruction_cost_ = 0;
+    }
+
+
+    void _grp5_process()
+    {
+        Register::increment_ip(1);
+        const ModRM mod = memory_.template read<uint8_t>(Register::ip());
+        Register::increment_ip(1);
+        const auto* op = &grp5_opcodes_[mod.reg];
+        (this->*op->impl)(mod);
+    }
+
+    template <typename T>
     void _jump_to_address()
     {
         Register::increment_ip(1);
-        uint8_t address = memory_.template read<uint8_t>(Register::ip());
-        Register::increment_ip(1);
-        address = static_cast<uint8_t>(address + Register::ip());
+        T address = memory_.template read<T>(Register::ip());
+        Register::increment_ip(sizeof(T));
+        address = static_cast<T>(address + Register::ip());
         Register::ip(address);
     }
+
+    void _jump_far()
+    {
+        Register::increment_ip(1);
+        const uint16_t ip_address = memory_.template read<uint16_t>(Register::ip());
+        Register::increment_ip(2);
+        const uint16_t cs_address = memory_.template read<uint16_t>(Register::ip());
+        Register::increment_ip(2);
+
+        Register::ip(ip_address);
+        Register::cs(cs_address);
+    }
+
+    void _jump_short_modrm(const ModRM mod)
+    {
+        const uint16_t disp   = process_modrm(mod);
+        const uint16_t offset = read_modmr<uint16_t>(mod, disp);
+        Register::ip(offset);
+    }
+
+    void _jump_far_modrm(const ModRM mod)
+    {
+        const uint16_t disp     = process_modrm(mod);
+        const auto from_address = modes.modes[mod.mod][mod.rm](disp);
+        last_instruction_cost_  = static_cast<uint8_t>(12 + modes.costs[mod.mod][mod.rm]);
+        const uint16_t ip       = memory_.template read<uint16_t>(from_address);
+        const uint16_t cs       = memory_.template read<uint16_t>(from_address + 2);
+        Register::ip(ip);
+        Register::cs(cs);
+    }
+
 
     template <typename T>
     inline T read_reg_mem(const ModRM mod, const uint16_t offset)
@@ -244,6 +342,11 @@ protected:
     {
         const ModRM mod = memory_.template read<uint8_t>(Register::ip());
         Register::increment_ip(1);
+        return std::pair<uint16_t, ModRM>(process_modrm(mod), mod);
+    }
+
+    inline uint16_t process_modrm(const ModRM mod) const
+    {
         uint16_t offset = 0;
         if ((mod.mod == 0 && mod.rm == 0x06) || mod.mod == 2)
         {
@@ -255,7 +358,7 @@ protected:
             offset = memory_.template read<uint8_t>(Register::ip());
             Register::increment_ip(1);
         }
-        return std::pair<uint16_t, ModRM>(offset, mod);
+        return offset;
     }
 
     template <typename T>
@@ -320,10 +423,22 @@ protected:
         fun impl;
     };
 
+    struct ExtraInstruction
+    {
+        typedef void (Cpu::*fun)(const ModRM);
+        fun impl;
+    };
+
     Instruction* op_;
     uint8_t last_instruction_cost_;
     char error_msg_[100];
-    static inline Instruction opcodes_[255];
+    static inline Instruction opcodes_[256];
+    static inline ExtraInstruction grp1_opcodes_[8];
+    static inline ExtraInstruction grp2_opcodes_[8];
+    static inline ExtraInstruction grp3a_opcodes_[8];
+    static inline ExtraInstruction grp3b_opcodes_[8];
+    static inline ExtraInstruction grp4_opcodes_[8];
+    static inline ExtraInstruction grp5_opcodes_[8];
     MemoryType& memory_;
 };
 

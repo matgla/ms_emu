@@ -155,12 +155,6 @@ inline void PrintTo(const MovTestsParams& reg, ::std::ostream* os)
     *os << "name: " << reg.name << std::endl;
 }
 
-std::string get_name(uint8_t command)
-{
-    std::stringstream str;
-    str << std::hex << std::setfill('0') << std::setw(2) << "0x" << static_cast<uint32_t>(command);
-    return str.str();
-}
 
 MovTestsParams mem_to_reg_data(uint8_t command, uint16_t Registers::*reg, uint16_t expect,
                                const std::vector<uint8_t>& init_memory,
@@ -1267,12 +1261,8 @@ auto get_mov_test_parameters()
                              imm8_to_modmr(0xc6), imm16_to_modmr(0xc7));
 }
 
-inline std::string generate_test_case_name(const ::testing::TestParamInfo<MovTestsParams>& info)
-{
-    return info.param.name;
-}
-
-INSTANTIATE_TEST_CASE_P(OpcodesMov, MovTests, get_mov_test_parameters(), generate_test_case_name);
+INSTANTIATE_TEST_CASE_P(OpcodesMov, MovTests, get_mov_test_parameters(),
+                        generate_test_case_name<MovTestsParams>);
 
 
 } // namespace msemu::cpu8086

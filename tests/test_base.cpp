@@ -15,42 +15,20 @@
  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "test_base.hpp"
 
+#include <iomanip>
 #include <sstream>
-#include <string>
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-#include "cpu8086_for_test.hpp"
-#include "memory.hpp"
 
 namespace msemu::cpu8086
 {
 
-template <typename TestData>
-class TestBase : public ::testing::TestWithParam<TestData>
+std::string get_name(uint8_t command)
 {
-public:
-    TestBase()
-        : memory_()
-        , sut_(memory_)
-    {
-    }
-
-protected:
-    using MemoryType = Memory<1024 * 128>;
-    MemoryType memory_;
-    cpu8086::CpuForTest<MemoryType> sut_;
-};
-
-template <typename T>
-inline std::string generate_test_case_name(const ::testing::TestParamInfo<T>& info)
-{
-    return info.param.name;
+    std::stringstream str;
+    str << std::hex << std::setfill('0') << std::setw(2) << "0x" << static_cast<uint32_t>(command);
+    return str.str();
 }
 
-std::string get_name(uint8_t command);
 
 } // namespace msemu::cpu8086

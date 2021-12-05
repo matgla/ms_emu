@@ -5,7 +5,10 @@ add_executable(msemu_tests)
 target_sources(msemu_tests 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/cpu8086_for_test.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_base.hpp
     PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_base.cpp
+
         ${CMAKE_CURRENT_SOURCE_DIR}/add_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/jmp_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/mov_tests.cpp
