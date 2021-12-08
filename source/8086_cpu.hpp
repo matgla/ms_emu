@@ -126,6 +126,7 @@ public:
         set_opcode(0x16, &Cpu::_push_segmentation_register<Register::ss_id>);
         set_opcode(0x1e, &Cpu::_push_segmentation_register<Register::ds_id>);
 
+        set_grp5_opcode(0x06, &Cpu::_push_modrm);
         // pop
         set_opcode(0x58, &Cpu::_pop_register_16<Register::ax_id>);
         set_opcode(0x59, &Cpu::_pop_register_16<Register::cx_id>);
@@ -513,7 +514,15 @@ protected:
         const uint16_t sp      = Register::sp();
         last_instruction_cost_ = 14;
 
-        std::cerr << std::hex << "Stack: " << calculate_stack_address(sp) << ", " << value << std::endl;
+        bus_.write(calculate_stack_address(sp), value);
+    }
+
+    void _push_modrm(const ModRM mod)
+    {
+        const auto disp      = process_modrm(mod);
+        const uint16_t value = read_modmr<uint16_t, 24, 15>(mod, disp);
+        Register::decrement_sp(2);
+        const uint16_t sp = Register::sp();
         bus_.write(calculate_stack_address(sp), value);
     }
 
