@@ -136,6 +136,7 @@ public:
         set_opcode(0x5d, &Cpu::_pop_register_16<Register::bp_id>);
         set_opcode(0x5e, &Cpu::_pop_register_16<Register::si_id>);
         set_opcode(0x5f, &Cpu::_pop_register_16<Register::di_id>);
+        set_opcode(0x8f, &Cpu::_pop_modrm);
 
         set_opcode(0x07, &Cpu::_pop_segmentation_register<Register::es_id>);
         set_opcode(0x17, &Cpu::_pop_segmentation_register<Register::ss_id>);
@@ -319,19 +320,19 @@ protected:
         return get_register_by_id<T>(mod.rm);
     }
 
-    template <typename T>
+    template <typename T, uint8_t mem_cost = 13, uint8_t reg_cost = 2>
     inline void write_modmr(const ModRM mod, const uint16_t offset, const T value)
     {
         if (mod.mod < 3)
         {
             const auto to_address = calculate_memory_address(mod, offset);
             bus_.write(to_address, value);
-            last_instruction_cost_ = 13 + modes.costs[mod.mod][mod.rm];
+            last_instruction_cost_ = mem_cost + modes.costs[mod.mod][mod.rm];
             return;
         }
 
         set_register_by_id<T>(mod.rm, value);
-        last_instruction_cost_ = 2;
+        last_instruction_cost_ = reg_cost;
     }
 
     template <typename T>
@@ -502,6 +503,7 @@ protected:
         const uint16_t value = bus_.template read<uint16_t>(calculate_stack_address(sp));
         set_register_16_by_id<reg>(value);
         Register::increment_sp(2);
+        last_instruction_cost_ = 12;
     }
 
 
@@ -526,6 +528,17 @@ protected:
         bus_.write(calculate_stack_address(sp), value);
     }
 
+    void _pop_modrm()
+    {
+        Register::increment_ip(1);
+        const auto [disp, mod] = process_modrm();
+        const uint16_t sp      = Register::sp();
+        const uint16_t value   = bus_.template read<uint16_t>(calculate_stack_address(sp));
+        write_modmr<uint16_t, 25, 12>(mod, disp, value);
+        Register::increment_sp(2);
+    }
+
+
     template <uint32_t reg>
     void _pop_segmentation_register()
     {
@@ -534,6 +547,8 @@ protected:
         const uint16_t value = bus_.template read<uint16_t>(calculate_stack_address(sp));
         set_segment_register_by_id<reg>(value);
         Register::increment_sp(2);
+
+        last_instruction_cost_ = 12;
     }
 
     void _cld()

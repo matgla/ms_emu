@@ -12,6 +12,7 @@ target_sources(msemu_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/add_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/jmp_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/push_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/pop_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/mov_tests.cpp
 )
 

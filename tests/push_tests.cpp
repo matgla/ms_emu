@@ -70,6 +70,7 @@ struct TestCase
 std::string print_test_case_info(const TestCase& data, std::string error)
 {
     std::stringstream str;
+    str << "ModRM: " << std::hex << "0x" << static_cast<uint16_t>(data.append_cmd[0]) << std::endl;
     str << "TC location     : " << data.location.file_name() << ":" << data.location.line() << std::endl;
     str << "Expect location : " << data.expect_location.file_name() << ":" << data.expect_location.line()
         << std::endl;
@@ -420,26 +421,27 @@ PushTestsParams generate_push_data_modrm(const std::source_location loc = std::s
             {
                 init_mem.data[0] -= 0x20;
                 init_mem.data[1] -= 0x20;
-                std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect_mem.data));
+                std::vector<uint8_t> expect = {};
+                std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect));
+                std::copy(expect_mem.data.begin(), expect_mem.data.end(), std::back_inserter(expect));
+                expect_mem.data = expect;
             }
             expect_mem.address = expect_regs.sp;
 
-            if (init_regs.sp == 0 && mod.mod == 3)
+            if (mod.rm == 4 && mod.mod == 3)
             {
+                expect_mem.data = {};
+                expect_mem.data.push_back(0xfd);
+                expect_mem.data.push_back(0x0f);
                 expect_mem.data.push_back(0xff);
                 expect_mem.data.push_back(0x0f);
             }
-            else if (mod.mod == 3)
-            {
-                expect_mem.data.push_back(0xba);
-                expect_mem.data.push_back(0xcd);
-            }
 
-
-            data = {};
+            data = {mod};
             std::copy(test.data.begin(), test.data.end(), std::back_insert_iterator(data));
 
-            TestCase case2{init_regs, expect_regs, expect_mem, cost, loc, {mod}, init_mem, test.loc};
+            TestCase case2{init_regs, expect_regs, expect_mem, cost, loc, data, init_mem, test.loc};
+            params.cases.push_back(case2);
             ++mod.rm;
         } while (mod.rm != 0);
         ++mod.mod;
