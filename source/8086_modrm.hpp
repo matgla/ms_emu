@@ -26,7 +26,7 @@ namespace msemu
 {
 namespace cpu8086
 {
-using AddressGenerators = std::array<uint32_t (*)(uint16_t address), 8>;
+using AddressGenerators = std::array<uint32_t (*)(uint16_t address, std::optional<uint8_t>&), 8>;
 using Costs             = std::array<uint8_t, 8>;
 
 struct Modes
@@ -69,82 +69,181 @@ constexpr uint8_t get_cost(const AccessCost c)
 }
 
 
+static inline uint32_t get_code_address(const uint32_t address, std::optional<uint8_t>& segment_register)
+{
+    if (segment_register)
+    {
+        const uint32_t section_modifier = get_segment_register_by_id(*segment_register);
+        return (section_modifier << 4) + address;
+    }
+    return (static_cast<uint32_t>(Register::cs()) << 4) + address;
+}
+
+static inline uint32_t get_data_address(const uint32_t address, std::optional<uint8_t>& segment_register)
+{
+    if (segment_register)
+    {
+        const uint32_t section_modifier = get_segment_register_by_id(*segment_register);
+        return (section_modifier << 4) + address;
+    }
+    return (static_cast<uint32_t>(Register::ds()) << 4) + address;
+}
+
+static inline uint32_t get_stack_address(const uint32_t address, std::optional<uint8_t>& segment_register)
+{
+    if (segment_register)
+    {
+        const uint32_t section_modifier = get_segment_register_by_id(*segment_register);
+        return (section_modifier << 4) + address;
+    }
+    
+    return (static_cast<uint32_t>(Register::ss()) << 4) + address;
+}
+
 constexpr static inline Modes modes{
     .modes =
         {
             AddressGenerators{
-                [](uint16_t) -> uint32_t
-                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::si()); },
-                [](uint16_t) -> uint32_t
-                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::di()); },
-                [](uint16_t) -> uint32_t
-                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::si()); },
-                [](uint16_t) -> uint32_t
-                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::di()); },
-                [](uint16_t) -> uint32_t { return Register::si(); },
-                [](uint16_t) -> uint32_t { return Register::di(); },
-                [](uint16_t address) -> uint32_t { return address; },
-                [](uint16_t) -> uint32_t { return Register::bx(); },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(Register::si()),
+                                            segment_register);
+                },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(Register::di()),
+                                            segment_register);
+                },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(Register::si()),
+                                             segment_register);
+                },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(Register::di()),
+                                             segment_register);
+                },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                { return get_data_address(Register::si(), segment_register); },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                { return get_data_address(Register::di(), segment_register); },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                { return get_stack_address(address, segment_register); },
+                [](uint16_t, std::optional<uint8_t>& segment_register) -> uint32_t
+                { return get_data_address(Register::bx(), segment_register); },
             },
             {
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::si()) +
-                           static_cast<uint32_t>(address);
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(Register::si()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
                 },
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::di()) +
-                           static_cast<uint32_t>(address);
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(Register::di()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
                 },
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::si()) +
-                           static_cast<uint32_t>(address);
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(Register::si()) +
+                                                 static_cast<uint32_t>(address),
+                                             segment_register);
                 },
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::di()) +
-                           static_cast<uint32_t>(address);
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(Register::di()) +
+                                                 static_cast<uint32_t>(address),
+                                             segment_register);
                 },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::si()) + static_cast<uint32_t>(address); },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::di()) + static_cast<uint32_t>(address); },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(address); },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(address); },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::si()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
+                },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::di()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
+                },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(address),
+                                             segment_register);
+                },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
+                },
             },
             {
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::si()) +
-                           static_cast<uint32_t>(address);
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(Register::si()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
                 },
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(Register::di()) +
-                           static_cast<uint32_t>(address);
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(Register::di()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
                 },
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::si()) +
-                           static_cast<uint32_t>(address);
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(Register::si()) +
+                                                 static_cast<uint32_t>(address),
+                                             segment_register);
                 },
-                [](uint16_t address) -> uint32_t
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
                 {
-                    return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(Register::di()) +
-                           static_cast<uint32_t>(address);
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(Register::di()) +
+                                                 static_cast<uint32_t>(address),
+                                             segment_register);
                 },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::si()) + static_cast<uint32_t>(address); },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::di()) + static_cast<uint32_t>(address); },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::bp()) + static_cast<uint32_t>(address); },
-                [](uint16_t address) -> uint32_t
-                { return static_cast<uint32_t>(Register::bx()) + static_cast<uint32_t>(address); },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::si()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
+                },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::di()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
+                },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_stack_address(static_cast<uint32_t>(Register::bp()) +
+                                                 static_cast<uint32_t>(address),
+                                             segment_register);
+                },
+                [](uint16_t address, std::optional<uint8_t>& segment_register) -> uint32_t
+                {
+                    return get_data_address(static_cast<uint32_t>(Register::bx()) +
+                                                static_cast<uint32_t>(address),
+                                            segment_register);
+                },
             },
 
         },

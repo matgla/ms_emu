@@ -48,5 +48,13 @@ cpu 8086
 mov BYTE [si + 0x12], 0xfa
 mov si, 0xfa
 mov cl, 0x11 
+mov [cs:0x1234], dl
+mov [es:0x1234], dl
+mov [0x1234], dl
+mov al, cs:[bx]
+
+add [cs:0x1234], dl
+
+
 
 

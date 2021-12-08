@@ -6,7 +6,9 @@ target_sources(msemu_cpu8086
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/8086_cpu.hpp 
         ${CMAKE_CURRENT_SOURCE_DIR}/memory.hpp 
+        ${CMAKE_CURRENT_SOURCE_DIR}/core_dump.hpp
     PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/core_dump.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/8086_registers.cpp
 )
 

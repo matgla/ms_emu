@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include "8086_registers.hpp"
@@ -62,47 +63,96 @@ void print_table_row(std::size_t columns, size_t size, const T& data, bool newli
 uint8_t opcode_to_command(char* line, std::size_t max_size, std::size_t opcode, uint8_t data[2],
                           std::size_t ip);
 
-void get_disassembly_line(char* line, std::size_t max_size, size_t& program_counter, auto& memory_)
+void get_disassembly_line(char* line, std::size_t max_size, uint32_t& program_counter, auto& bus)
 {
-    uint8_t pc = memory_.template read<uint8_t>(program_counter);
+    static bool continued_instruction = false;
+    const uint32_t address            = Register::cs() << 4 | program_counter;
+    uint8_t pc                        = bus.template read<uint8_t>(address);
 
     uint8_t data[6] = {};
+
     for (uint8_t i = 1; i < sizeof(data); ++i)
     {
-        data[i - 1] = memory_.template read<uint8_t>(program_counter + i);
+        data[i - 1] = bus.template read<uint8_t>(address + i);
     }
 
     char command[30];
-    uint8_t size = opcode_to_command(command, sizeof(command), pc, data, program_counter);
+    uint8_t size = opcode_to_command(command, sizeof(command), pc, data, address);
 
     std::memset(line, 0, max_size);
-    char cursor;
-    if (program_counter == Register::ip())
+    if (continued_instruction)
     {
-        cursor = '>';
+        continued_instruction = false;
+        uint8_t mod_byte      = bus.template read<uint8_t>(Register::cs() << 4 | (program_counter - 1));
+
+        char cursor = ' ';
+        if (program_counter - 1 == Register::ip())
+        {
+            cursor = '>';
+        }
+        if (size == 1)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x                 | %s", cursor, address - 1, mod_byte,
+                     pc, command);
+        }
+        if (size == 2)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x %02x             | %s", cursor, address - 1,
+                     mod_byte, pc, data[0], command);
+        }
+        if (size == 3)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x %02x %02x         | %s", cursor, address - 1,
+                     mod_byte, pc, data[0], data[1], command);
+        }
+        if (size == 4)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x %02x %02x %02x     | %s", cursor, address - 1,
+                     mod_byte, pc, data[0], data[1], data[2], command);
+        }
+        if (size == 5)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x %02x %02x %02x %02x | %s", cursor, address - 1,
+                     mod_byte, pc, data[0], data[1], data[2], data[3], command);
+        }
+        program_counter += size;
+    }
+    else if (size != 0)
+    {
+        char cursor;
+        if (program_counter == Register::ip())
+        {
+            cursor = '>';
+        }
+        else
+        {
+            cursor = ' ';
+        }
+        if (size == 1)
+        {
+            snprintf(line, max_size, " %c %8x: %02x                 | %s", cursor, address, pc, command);
+        }
+        if (size == 2)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x              | %s", cursor, address, pc, data[0],
+                     command);
+        }
+        if (size == 3)
+        {
+            snprintf(line, max_size, " %c %8x: %02x %02x %02x           | %s", cursor, address, pc, data[0],
+                     data[1], command);
+        }
+        program_counter += size;
     }
     else
     {
-        cursor = ' ';
+        program_counter += 1;
+        continued_instruction = true;
+        get_disassembly_line(line, max_size, program_counter, bus);
     }
-    if (size == 1)
-    {
-        snprintf(line, max_size, " %c %8lx: %02x        | %s", cursor, program_counter, pc, command);
-    }
-    if (size == 2)
-    {
-        snprintf(line, max_size, " %c %8lx: %02x %02x     | %s", cursor, program_counter, pc, data[0],
-                 command);
-    }
-    if (size == 3)
-    {
-        snprintf(line, max_size, " %c %8lx: %02x %02x %02x  | %s", cursor, program_counter, pc, data[0],
-                 data[1], command);
-    }
-    program_counter += size;
 }
 
-void dump(const char* error_msg, auto& memory_)
+void dump(const char* error_msg, auto& bus)
 {
     constexpr const char* clear_screen = "\033[H\033[2J\033[3J";
 
@@ -111,17 +161,14 @@ void dump(const char* error_msg, auto& memory_)
 
     print_table_top(3, 15, false);
     char disasm[255];
-    std::size_t pc = Register::ip();
-    if (pc < 6)
-        pc = 0;
-    else
-        pc -= 6;
+    uint32_t pc = Register::ip();
+    // pc -= 5;
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
     char line[3][20] = {"REG  H  L  ", "Segments", "Pointers"};
     print_table_row(3, 15, line, false);
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
     sprintf(line[0], "A  %-4x", Register::ax());
@@ -129,7 +176,7 @@ void dump(const char* error_msg, auto& memory_)
     sprintf(line[2], "SP: %-4x", Register::sp());
     print_table_row(3, 15, line, false);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
     sprintf(line[0], "B  %-4x", Register::bx());
@@ -137,7 +184,7 @@ void dump(const char* error_msg, auto& memory_)
     sprintf(line[2], "BP: %-4x", Register::bp());
     print_table_row(3, 15, line, false);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
 
@@ -146,7 +193,7 @@ void dump(const char* error_msg, auto& memory_)
     sprintf(line[2], "SI: %-4x", Register::si());
     print_table_row(3, 15, line, false);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
 
@@ -156,7 +203,7 @@ void dump(const char* error_msg, auto& memory_)
     sprintf(line[2], "DI: %-4x", Register::di());
     print_table_row(3, 15, line, false);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
 
@@ -170,13 +217,13 @@ void dump(const char* error_msg, auto& memory_)
     puts_many(horizontal, 15, false);
     puts_many(right_top_bottom, 1, false);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
 
     printf("%s  OF   DF   IF   TF   SF   ZF   AF   PF   CF   %s", vertical, vertical);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
     printf("%s  %1d    %1d    %1d    %1d    %1d    %1d    %1d    %1d    %1d    %s", vertical,
@@ -184,7 +231,7 @@ void dump(const char* error_msg, auto& memory_)
            Register::flags().s(), Register::flags().z(), Register::flags().ax(), Register::flags().p(),
            Register::flags().cy(), vertical);
 
-    get_disassembly_line(disasm, sizeof(disasm), pc, memory_);
+    get_disassembly_line(disasm, sizeof(disasm), pc, bus);
     printf("%s\n", disasm);
 
     print_table_bottom(0, 47);

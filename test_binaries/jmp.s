@@ -1,2 +1,1 @@
-mov bp, 0x1234
-jmp far ax:bx
+jmp short 0xfa

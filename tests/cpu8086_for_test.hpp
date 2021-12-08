@@ -99,11 +99,11 @@ struct Registers
 };
 #pragma GCC diagnostic pop
 
-template <typename MemoryType>
-class CpuForTest : public Cpu<MemoryType>
+template <typename BusType>
+class CpuForTest : public Cpu<BusType>
 {
 public:
-    using Cpu<MemoryType>::Cpu;
+    using Cpu<BusType>::Cpu;
 
     void struct_to_reg(const Registers& r)
     {

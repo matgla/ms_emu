@@ -28,10 +28,11 @@
 
 namespace msemu::cpu8086
 {
-
+namespace
+{
 struct MemoryOp
 {
-    std::size_t address;
+    uint32_t address;
     std::vector<uint8_t> data;
 };
 
@@ -75,6 +76,7 @@ struct JmpTestsParams
     std::vector<TestCase> cases;
     std::string name;
 };
+} // namespace
 
 class JmpTests : public TestBase<JmpTestsParams>
 {
@@ -89,12 +91,12 @@ TEST_P(JmpTests, ProcessCmd)
         cmd.push_back(param.cmd);
         std::copy(test.data.begin(), test.data.end(), std::back_inserter(cmd));
 
-        memory_.clear();
-        memory_.write(test.regs_init.ip, cmd);
+        bus_.clear();
+        bus_.write(test.regs_init.ip, cmd);
 
         if (!test.memory_op.data.empty())
         {
-            memory_.write(test.memory_op.address, test.memory_op.data);
+            bus_.write(test.memory_op.address, test.memory_op.data);
         }
 
         sut_.set_registers(test.regs_init);

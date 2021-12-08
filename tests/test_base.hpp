@@ -23,7 +23,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "bus.hpp"
 #include "cpu8086_for_test.hpp"
+#include "device.hpp"
 #include "memory.hpp"
 
 namespace msemu::cpu8086
@@ -32,17 +34,20 @@ namespace msemu::cpu8086
 template <typename TestData>
 class TestBase : public ::testing::TestWithParam<TestData>
 {
+    using MemoryType  = Device<Memory<1024 * 128>, 0x00000000>;
+    using BiosRomType = Device<Memory<1024 * 64>, 0x000ffff0>;
+
 public:
     TestBase()
-        : memory_()
-        , sut_(memory_)
+        : bus_(MemoryType("flash"), BiosRomType("bios/rom"))
+        , sut_(bus_)
     {
     }
 
 protected:
-    using MemoryType = Memory<1024 * 128>;
-    MemoryType memory_;
-    cpu8086::CpuForTest<MemoryType> sut_;
+    using BusType = Bus<MemoryType, BiosRomType>;
+    BusType bus_;
+    cpu8086::CpuForTest<BusType> sut_;
 };
 
 template <typename T>

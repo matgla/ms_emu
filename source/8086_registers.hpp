@@ -507,6 +507,17 @@ public:
         r10 = r10 - value;
     }
 
+    static inline void decrement_sp(const uint16_t value)
+    {
+        sp(sp() - value);
+    }
+
+    static inline void increment_sp(const uint16_t value)
+    {
+        sp(sp() + value);
+    }
+
+
     static inline Flags flags()
     {
         return Flags{};
@@ -720,7 +731,8 @@ inline T get_register_by_id()
     return static_cast<T>(get_register_16_by_id<reg>());
 }
 
-inline uint16_t get_segment_register_by_id(uint32_t reg)
+template <uint32_t reg>
+inline uint16_t get_segment_register_by_id()
 {
     switch (reg)
     {

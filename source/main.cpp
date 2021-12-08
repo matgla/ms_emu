@@ -22,6 +22,9 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "bus.hpp"
+#include "device.hpp"
+
 #include "8086_cpu.hpp"
 
 static struct termios term_orig;
@@ -57,18 +60,28 @@ int main(int argc, const char* argv[])
 {
     printf("8086 emulator starting\n");
     msemu::Memory<1024 * 128> memory;
+    using FlashType = msemu::Device<msemu::Memory<1024 * 128>, 0x00000000>;
+    using BiosType  = msemu::Device<msemu::Memory<1024 * 64>, 0x000f0100>;
+    // msemu::Device<msemu::Memory<1024 * 128>, 0x> flash("FLASH");
+    msemu::Bus bus(FlashType("flash"), BiosType("bios/rom"));
+    bus.print();
+
     if (argc < 2)
     {
         printf("Please provide binary file\n");
         return 0;
     }
-    memory.load_from_file(argv[1]);
 
-    msemu::cpu8086::Cpu cpu(memory);
+    msemu::MemoryView bios_memory = bus.get("bios/rom");
+    printf("BIOS size: %x\n", bios_memory.size());
+    bios_memory.load_from_file(argv[1]);
+
+    msemu::cpu8086::Cpu cpu(bus);
+    cpu.jump_to_bios();
 
     disable_buffered_io();
     setlocale(LC_CTYPE, "");
-
+    //
     printf("ROM loaded\n");
     char c = '\n';
     while (c != 27)
@@ -83,19 +96,3 @@ int main(int argc, const char* argv[])
     }
     restore_terminal_settings();
 }
-
-// #include <pico/stdlib.h>
-
-// int main()
-// {
-//     const uint LED_PIN = PICO_DEFAULT_LED_PIN;
-//     gpio_init(LED_PIN);
-//     gpio_set_dir(LED_PIN, GPIO_OUT);
-//     while (true)
-//     {
-//         gpio_put(LED_PIN, 1);
-//         sleep_ms(250);
-//         gpio_put(LED_PIN, 0);
-//         sleep_ms(250);
-//     }
-// }

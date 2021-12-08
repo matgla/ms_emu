@@ -24,16 +24,52 @@
 #include <cstring>
 #include <span>
 
+
 namespace msemu
 {
 
-template <std::size_t Size>
+template <uint32_t Size>
 class Memory
 {
 public:
+    static constexpr uint32_t size = Size;
+
     Memory()
         : memory_{}
     {
+    }
+
+    std::span<uint8_t> span()
+    {
+        return memory_;
+    }
+
+    std::span<const uint8_t> span() const
+    {
+        return memory_;
+    }
+
+    void clear()
+    {
+        memory_ = {};
+    }
+
+private:
+    std::array<uint8_t, Size> memory_;
+};
+
+class MemoryView
+{
+public:
+    MemoryView(const std::span<uint8_t>& span, const uint32_t start_address)
+        : memory_(span)
+        , start_address_(start_address)
+    {
+    }
+
+    uint32_t size() const
+    {
+        return static_cast<uint32_t>(memory_.size());
     }
 
     void load_from_file(const char* file)
@@ -55,46 +91,95 @@ public:
     }
 
     template <typename T>
-    inline T read(std::size_t address) const
+    inline T read(uint32_t address) const
     {
+        address -= start_address_;
         if constexpr (sizeof(T) == 1)
         {
-            return memory_[address];
+            if (address >= memory_.size())
+            {
+                return 0;
+            }
+            return static_cast<T>(memory_[address]);
         }
         else
         {
-            return static_cast<uint16_t>(memory_[address + 1] << 8 | (memory_[address]));
+            if (address + 1 >= memory_.size())
+            {
+                return 0;
+            }
+            return static_cast<T>(memory_[address + 1] << 8 | (memory_[address]));
         }
     }
 
-    void write(std::size_t address, uint8_t data)
+    void write(uint32_t address, uint8_t data)
     {
+        address -= start_address_;
         memory_[address] = data;
     }
 
-    void write(std::size_t address, uint16_t data)
+    void write(uint32_t address, uint16_t data)
     {
+        address -= start_address_;
         memory_[address]     = static_cast<uint8_t>(data & 0xff);
         memory_[address + 1] = static_cast<uint8_t>((data >> 8) & 0xff);
     }
 
-    void write(std::size_t address, const std::span<const uint8_t> data)
+    void write(uint32_t address, const std::span<const uint8_t> data)
     {
+        address -= start_address_;
         std::memcpy(&memory_[address], data.data(), data.size());
     }
 
-    void read(std::size_t address, std::span<uint8_t> data)
+    void read(uint32_t address, std::span<uint8_t> data) const
     {
+        address -= start_address_;
         std::memcpy(data.data(), &memory_[address], data.size());
     }
 
     void clear()
     {
-        std::memset(memory_.data(), 0, Size);
+        std::memset(memory_.data(), 0, memory_.size_bytes());
+    }
+
+
+private:
+    std::span<uint8_t> memory_;
+    const uint32_t start_address_;
+};
+
+class ConstMemoryView
+{
+public:
+    ConstMemoryView(const std::span<const uint8_t>& span, const uint32_t start_address)
+        : memory_(span)
+        , start_address_(start_address)
+    {
+    }
+
+    template <typename T>
+    inline T read(std::size_t address) const
+    {
+        if constexpr (sizeof(T) == 1)
+        {
+            return memory_[address - start_address_];
+        }
+        else
+        {
+            return static_cast<uint16_t>(memory_[address - start_address_ + 1] << 8 |
+                                         (memory_[address - start_address_]));
+        }
+    }
+
+    void read(std::size_t address, std::span<uint8_t> data) const
+    {
+        std::memcpy(data.data(), &memory_[address - start_address_], data.size());
     }
 
 private:
-    std::array<uint8_t, Size> memory_;
+    std::span<const uint8_t> memory_;
+    const uint32_t start_address_;
 };
+
 
 } // namespace msemu

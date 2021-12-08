@@ -32,7 +32,7 @@ namespace msemu::cpu8086
 
 struct MemoryOp
 {
-    std::size_t address       = 0;
+    uint32_t address          = 0;
     std::vector<uint8_t> data = {};
 };
 
@@ -48,6 +48,7 @@ struct TestData
     std::source_location location;
     std::source_location init_sut_location;
     std::source_location expect_location;
+    std::optional<ModRM> mod;
 };
 
 struct MovTestsParams
@@ -100,6 +101,8 @@ std::string print_test_case_info(const TestData& data, std::string error, int nu
     str << "TC location: " << data.location.file_name() << ":" << data.location.line() << std::endl;
     str << "Expect location: " << data.expect_location.file_name() << ":" << data.expect_location.line()
         << std::endl;
+    str << "Init location: " << data.init_sut_location.file_name() << ":" << data.init_sut_location.line()
+        << std::endl;
     str << "error msg: " << error << std::endl;
     str << "cmd: {";
     stringify_array(data.cmd, str);
@@ -116,18 +119,40 @@ TEST_P(MovTests, ProcessCmd)
     sut_.set_registers(Registers{});
     for (const auto& test_data : data.data)
     {
-        memory_.clear();
-        if (test_data.memop.data.size())
-        {
-            memory_.write(test_data.memop.address, test_data.memop.data);
-        }
-
+        bus_.clear();
         if (test_data.init)
         {
             sut_.set_registers(*test_data.init);
         }
+
+        if (test_data.memop.data.size())
+        {
+            if (test_data.mod)
+            {
+                auto m = test_data.mod->rm;
+                if (m == 0 || m == 1 || m == 4 || m == 5 || m == 7)
+                {
+                    const uint32_t address = (sut_.get_registers().ds << 4) + test_data.memop.address;
+                    bus_.write(address, test_data.memop.data);
+                }
+                else if (m == 2 || m == 3 || m == 6)
+                {
+                    const uint32_t address = (sut_.get_registers().ss << 4) + test_data.memop.address;
+
+                    bus_.write(address, test_data.memop.data);
+                }
+            }
+            else
+            {
+                bus_.write(test_data.memop.address, test_data.memop.data);
+            }
+        }
+
         auto& opcode = test_data.cmd;
-        memory_.write(sut_.get_registers().ip, opcode);
+
+        const uint32_t address =
+            (static_cast<uint32_t>(sut_.get_registers().cs) << 4) + sut_.get_registers().ip;
+        bus_.write(address, opcode);
 
         sut_.step();
 
@@ -139,7 +164,7 @@ TEST_P(MovTests, ProcessCmd)
         if (test_data.expect_memory)
         {
             std::vector<uint8_t> from_memory(test_data.expect_memory->data.size());
-            memory_.read(test_data.expect_memory->address, from_memory);
+            bus_.read(test_data.expect_memory->address, from_memory);
             EXPECT_THAT(from_memory, ::testing::ElementsAreArray(test_data.expect_memory->data))
                 << print_test_case_info(test_data, sut_.get_error(), i);
         }
@@ -155,6 +180,67 @@ inline void PrintTo(const MovTestsParams& reg, ::std::ostream* os)
     *os << "name: " << reg.name << std::endl;
 }
 
+inline std::string get_segment_register_name(uint16_t Registers::*reg)
+{
+    if (reg == &Registers::es)
+    {
+        return "es";
+    }
+    else if (reg == &Registers::cs)
+    {
+        return "cs";
+    }
+    else if (reg == &Registers::ds)
+    {
+        return "ds";
+    }
+    else if (reg == &Registers::ss)
+    {
+        return "ss";
+    }
+    return "unk";
+}
+
+inline uint8_t get_segment_modifier_byte(uint16_t Registers::*reg)
+{
+    if (reg == &Registers::es)
+    {
+        return 0x26;
+    }
+    else if (reg == &Registers::cs)
+    {
+        return 0x2e;
+    }
+    else if (reg == &Registers::ds)
+    {
+        return 0x3e;
+    }
+    else if (reg == &Registers::ss)
+    {
+        return 0x36;
+    }
+    return 0x00;
+}
+
+MovTestsParams
+    modrm_mem_to_reg8_with_section_offset(uint8_t command, uint16_t Registers::*reg,
+                                          const std::source_location loc = std::source_location::current())
+{
+    Registers init{.di = 0x200};
+    init.*reg = 0x100;
+
+    Registers expect{.bx = 0xab00, .di = 0x200, .ip = 0x3};
+    expect.*reg = 0x100;
+    return MovTestsParams{get_name(command) + "_sec_" + get_segment_register_name(reg),
+                          {TestData{
+                              .cmd      = {get_segment_modifier_byte(reg), command, 0x3d},
+                              .memop    = MemoryOp{.address = 0x1200, .data = {0xab}},
+                              .init     = init,
+                              .expect   = expect,
+                              .cycles   = 17,
+                              .location = loc,
+                          }}};
+}
 
 MovTestsParams mem_to_reg_data(uint8_t command, uint16_t Registers::*reg, uint16_t expect,
                                const std::vector<uint8_t>& init_memory,
@@ -632,6 +718,7 @@ MovTestsParams modmr_generate_data(uint8_t command, const std::vector<MovDataIni
                     .location          = loc,
                     .init_sut_location = d.location,
                     .expect_location   = init_data.location,
+                    .mod               = modrm,
                 };
 
                 params.data.push_back(test_data);
@@ -981,12 +1068,12 @@ MovTestsParams modmr_to_sreg(uint8_t command,
                 .test_init =
                     {
 
-                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2030, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
                     },
@@ -996,8 +1083,8 @@ MovTestsParams modmr_to_sreg(uint8_t command,
                 .test_init =
                     {
 
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x2045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
@@ -1011,12 +1098,12 @@ MovTestsParams modmr_to_sreg(uint8_t command,
                 .test_init =
                     {
 
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
-                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
+                        ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x0004, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1234, 0xbc3a},
                         ModRMInitData{MemoryOp{.address = 0x3045, .data = {0x3a, 0xbc}}, 0x1010, 0xbc3a},
                     },
@@ -1244,21 +1331,24 @@ MovTestsParams imm16_to_modmr(uint8_t command,
 
 auto get_mov_test_parameters()
 {
-    return ::testing::Values(mem_to_reg_data(0xa0, &Registers::ax, 0x00ab, {0xab, 0xff}),
-                             mem_to_reg_data(0xa1, &Registers::ax, 0xface, {0xce, 0xfa}),
-                             reg_to_mem_data(0xa2, &Registers::ax, 0x12ab, {0xab, 0x00}),
-                             reg_to_mem_data(0xa3, &Registers::ax, 0xabcd, {0xcd, 0xab}),
-                             imm8_to_reg_lo(0xb0, &Registers::ax), imm8_to_reg_lo(0xb1, &Registers::cx),
-                             imm8_to_reg_lo(0xb2, &Registers::dx), imm8_to_reg_lo(0xb3, &Registers::bx),
-                             imm8_to_reg_hi(0xb4, &Registers::ax), imm8_to_reg_hi(0xb5, &Registers::cx),
-                             imm8_to_reg_hi(0xb6, &Registers::dx), imm8_to_reg_hi(0xb7, &Registers::bx),
-                             imm8_to_reg(0xb8, &Registers::ax), imm8_to_reg(0xb9, &Registers::cx),
-                             imm8_to_reg(0xba, &Registers::dx), imm8_to_reg(0xbb, &Registers::bx),
-                             imm8_to_reg(0xbc, &Registers::sp), imm8_to_reg(0xbd, &Registers::bp),
-                             imm8_to_reg(0xbe, &Registers::si), imm8_to_reg(0xbf, &Registers::di),
-                             modmr_to_reg8(0x8a), reg8_to_modmr(0x88), modmr_to_reg16(0x8b),
-                             reg16_to_modmr(0x89), modmr_to_sreg(0x8e), sreg_to_modmr(0x8c),
-                             imm8_to_modmr(0xc6), imm16_to_modmr(0xc7));
+    return ::testing::Values(
+        mem_to_reg_data(0xa0, &Registers::ax, 0x00ab, {0xab, 0xff}),
+        mem_to_reg_data(0xa1, &Registers::ax, 0xface, {0xce, 0xfa}),
+        reg_to_mem_data(0xa2, &Registers::ax, 0x12ab, {0xab, 0x00}),
+        reg_to_mem_data(0xa3, &Registers::ax, 0xabcd, {0xcd, 0xab}), imm8_to_reg_lo(0xb0, &Registers::ax),
+        imm8_to_reg_lo(0xb1, &Registers::cx), imm8_to_reg_lo(0xb2, &Registers::dx),
+        imm8_to_reg_lo(0xb3, &Registers::bx), imm8_to_reg_hi(0xb4, &Registers::ax),
+        imm8_to_reg_hi(0xb5, &Registers::cx), imm8_to_reg_hi(0xb6, &Registers::dx),
+        imm8_to_reg_hi(0xb7, &Registers::bx), imm8_to_reg(0xb8, &Registers::ax),
+        imm8_to_reg(0xb9, &Registers::cx), imm8_to_reg(0xba, &Registers::dx),
+        imm8_to_reg(0xbb, &Registers::bx), imm8_to_reg(0xbc, &Registers::sp),
+        imm8_to_reg(0xbd, &Registers::bp), imm8_to_reg(0xbe, &Registers::si),
+        imm8_to_reg(0xbf, &Registers::di), modmr_to_reg8(0x8a), reg8_to_modmr(0x88), modmr_to_reg16(0x8b),
+        reg16_to_modmr(0x89), modmr_to_sreg(0x8e), sreg_to_modmr(0x8c), imm8_to_modmr(0xc6),
+        imm16_to_modmr(0xc7), modrm_mem_to_reg8_with_section_offset(0x8a, &Registers::es),
+        modrm_mem_to_reg8_with_section_offset(0x8a, &Registers::cs),
+        modrm_mem_to_reg8_with_section_offset(0x8a, &Registers::ss),
+        modrm_mem_to_reg8_with_section_offset(0x8a, &Registers::ds));
 }
 
 INSTANTIATE_TEST_CASE_P(OpcodesMov, MovTests, get_mov_test_parameters(),
