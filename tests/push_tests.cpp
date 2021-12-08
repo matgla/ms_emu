@@ -297,10 +297,56 @@ const std::vector<InitModRMPushTest> push_mod0 = {
                       MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 29, {}),
 };
 
-
-const std::vector<std::vector<InitModRMPushTest>> push_modmr_data{
-    push_mod0,
+const std::vector<InitModRMPushTest> push_mod1 = {
+    InitModRMPushTest(Registers{.bx = 0x0010, .si = 0x0100, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 35, {0x20}),
+    InitModRMPushTest(Registers{.bx = 0x0010, .di = 0x0100, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 36, {0x20}),
+    InitModRMPushTest(Registers{.si = 0x0100, .bp = 0x0010, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 36, {0x20}),
+    InitModRMPushTest(Registers{.di = 0x0100, .bp = 0x0010, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 35, {0x20}),
+    InitModRMPushTest(Registers{.si = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 33, {0x20}),
+    InitModRMPushTest(Registers{.di = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 33, {0x20}),
+    InitModRMPushTest(Registers{.bp = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 33, {0x20}),
+    InitModRMPushTest(Registers{.bx = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 33, {0x20}),
 };
+
+const std::vector<InitModRMPushTest> push_mod2 = {
+    InitModRMPushTest(Registers{.bx = 0x0010, .si = 0x0100, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 35, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.bx = 0x0010, .di = 0x0100, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 36, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.si = 0x0100, .bp = 0x0010, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 36, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.di = 0x0100, .bp = 0x0010, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 35, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.si = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 33, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.di = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 33, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.bp = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 33, {0x20, 0x01}),
+    InitModRMPushTest(Registers{.bx = 0x0110, .sp = 0x0fff},
+                      MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 33, {0x20, 0x01}),
+};
+
+const std::vector<InitModRMPushTest> push_mod3 = {
+    InitModRMPushTest(Registers{.ax = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.cx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.dx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.bx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.bp = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.si = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPushTest(Registers{.di = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+};
+
+const std::vector<std::vector<InitModRMPushTest>> push_modmr_data{push_mod0, push_mod1, push_mod2, push_mod3};
 
 uint8_t get_size(const ModRM mod)
 {
@@ -348,6 +394,17 @@ PushTestsParams generate_push_data_modrm(const std::source_location loc = std::s
             expect_regs.ip += get_size(mod);
             MemoryOp init_mem   = test.mem_init;
             MemoryOp expect_mem = {.address = expect_regs.sp};
+            if (mod.rm == 4 && mod.mod == 3)
+            {
+                expect_mem.data.push_back(0xff);
+                expect_mem.data.push_back(0x0f);
+            }
+            else if (mod.mod == 3)
+            {
+                expect_mem.data.push_back(0xba);
+                expect_mem.data.push_back(0xcd);
+            }
+
             std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect_mem.data));
 
             std::vector<uint8_t> data = {mod};
@@ -359,11 +416,25 @@ PushTestsParams generate_push_data_modrm(const std::source_location loc = std::s
             expect_regs.sp -= 2;
             expect_regs.ip += get_size(mod);
 
-            init_mem.data[0] -= 0x20;
-            init_mem.data[1] -= 0x20;
-
+            if (init_mem.data.size())
+            {
+                init_mem.data[0] -= 0x20;
+                init_mem.data[1] -= 0x20;
+                std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect_mem.data));
+            }
             expect_mem.address = expect_regs.sp;
-            std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect_mem.data));
+
+            if (init_regs.sp == 0 && mod.mod == 3)
+            {
+                expect_mem.data.push_back(0xff);
+                expect_mem.data.push_back(0x0f);
+            }
+            else if (mod.mod == 3)
+            {
+                expect_mem.data.push_back(0xba);
+                expect_mem.data.push_back(0xcd);
+            }
+
 
             data = {};
             std::copy(test.data.begin(), test.data.end(), std::back_insert_iterator(data));
@@ -372,7 +443,7 @@ PushTestsParams generate_push_data_modrm(const std::source_location loc = std::s
             ++mod.rm;
         } while (mod.rm != 0);
         ++mod.mod;
-    } while (mod.mod != 1);
+    } while (mod.mod != 0);
 
 
     return params;
