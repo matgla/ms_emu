@@ -72,6 +72,8 @@ struct TestCase
 std::string print_test_case_info(const TestCase& data, std::string error)
 {
     std::stringstream str;
+    str << "ModRM: " << std::hex << "0x" << static_cast<uint16_t>(data.append_cmd[0]) << std::dec
+        << std::endl;
     str << "TC location     : " << data.location.file_name() << ":" << data.location.line() << std::endl;
     str << "Expect location : " << data.expect_location.file_name() << ":" << data.expect_location.line()
         << std::endl;
@@ -202,68 +204,68 @@ const std::vector<InitModRMPopTest> pop_mod0 = {
     InitModRMPopTest(Registers{.bx = 0x0010, .si = 0x0100, .sp = 0x0fff},
                      MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 32, {}),
     InitModRMPopTest(Registers{.bx = 0x0010, .di = 0x0100, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 32, {}),
+                     MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 33, {}),
     InitModRMPopTest(Registers{.si = 0x0100, .bp = 0x0010, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 32, {}),
+                     MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 33, {}),
     InitModRMPopTest(Registers{.di = 0x0100, .bp = 0x0010, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 31, {}),
+                     MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 32, {}),
     InitModRMPopTest(Registers{.si = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}},
-                     29, {}),
+                     30, {}),
     InitModRMPopTest(Registers{.di = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}},
-                     29, {}),
-    InitModRMPopTest(Registers{.sp = 0x0fff}, MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 30,
+                     30, {}),
+    InitModRMPopTest(Registers{.sp = 0x0fff}, MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}}, 31,
                      {0x10, 0x01}),
     InitModRMPopTest(Registers{.bx = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0110, .data = {0xab, 0xcd}},
-                     29, {}),
+                     30, {}),
 };
 
 const std::vector<InitModRMPopTest> pop_mod1 = {
     InitModRMPopTest(Registers{.bx = 0x0010, .si = 0x0100, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 35, {0x20}),
+                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 36, {0x20}),
     InitModRMPopTest(Registers{.bx = 0x0010, .di = 0x0100, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 36, {0x20}),
+                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 37, {0x20}),
     InitModRMPopTest(Registers{.si = 0x0100, .bp = 0x0010, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 36, {0x20}),
+                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 37, {0x20}),
     InitModRMPopTest(Registers{.di = 0x0100, .bp = 0x0010, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 35, {0x20}),
+                     MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}}, 36, {0x20}),
     InitModRMPopTest(Registers{.si = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}},
-                     33, {0x20}),
+                     34, {0x20}),
     InitModRMPopTest(Registers{.di = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}},
-                     33, {0x20}),
+                     34, {0x20}),
     InitModRMPopTest(Registers{.bp = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}},
-                     33, {0x20}),
+                     34, {0x20}),
     InitModRMPopTest(Registers{.bx = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0130, .data = {0xab, 0xcd}},
-                     33, {0x20}),
+                     34, {0x20}),
 };
 
 const std::vector<InitModRMPopTest> pop_mod2 = {
     InitModRMPopTest(Registers{.bx = 0x0010, .si = 0x0100, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 35, {0x20, 0x01}),
+                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 36, {0x20, 0x01}),
     InitModRMPopTest(Registers{.bx = 0x0010, .di = 0x0100, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 36, {0x20, 0x01}),
+                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 37, {0x20, 0x01}),
     InitModRMPopTest(Registers{.si = 0x0100, .bp = 0x0010, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 36, {0x20, 0x01}),
+                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 37, {0x20, 0x01}),
     InitModRMPopTest(Registers{.di = 0x0100, .bp = 0x0010, .sp = 0x0fff},
-                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 35, {0x20, 0x01}),
+                     MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}}, 36, {0x20, 0x01}),
     InitModRMPopTest(Registers{.si = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}},
-                     33, {0x20, 0x01}),
+                     34, {0x20, 0x01}),
     InitModRMPopTest(Registers{.di = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}},
-                     33, {0x20, 0x01}),
+                     34, {0x20, 0x01}),
     InitModRMPopTest(Registers{.bp = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}},
-                     33, {0x20, 0x01}),
+                     34, {0x20, 0x01}),
     InitModRMPopTest(Registers{.bx = 0x0110, .sp = 0x0fff}, MemoryOp{.address = 0x0230, .data = {0xab, 0xcd}},
-                     33, {0x20, 0x01}),
+                     34, {0x20, 0x01}),
 };
 
 const std::vector<InitModRMPopTest> pop_mod3 = {
-    InitModRMPopTest(Registers{.ax = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.cx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.dx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.bx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.bp = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.si = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
-    InitModRMPopTest(Registers{.di = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 15, {}),
+    InitModRMPopTest(Registers{.ax = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.cx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.dx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.bx = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.bp = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.si = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
+    InitModRMPopTest(Registers{.di = 0xcdba, .sp = 0x0fff}, MemoryOp{}, 12, {}),
 };
 
 const std::vector<std::vector<InitModRMPopTest>> pop_modmr_data{pop_mod0, pop_mod1, pop_mod2, pop_mod3};
@@ -339,33 +341,33 @@ PopTestsParams generate_pop_data_modrm(const std::source_location loc = std::sou
             {
                 init_mem.data[0] -= 0x20;
                 init_mem.data[1] -= 0x20;
-                std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect_mem.data));
+                std::vector<uint8_t> expect = {};
+                std::copy(init_mem.data.begin(), init_mem.data.end(), std::back_inserter(expect));
+                std::copy(expect_mem.data.begin(), expect_mem.data.end(), std::back_inserter(expect));
+                expect_mem.data = expect;
             }
             expect_mem.address = expect_regs.sp;
-            expect_mem.data[0] -= 0x20;
-            expect_mem.data[1] -= 0x20;
 
-            if (init_regs.sp == 0 && mod.mod == 3)
+            if (mod.rm == 4 && mod.mod == 3)
             {
+                expect_mem.data = {};
+                expect_mem.data.push_back(0xfd);
+                expect_mem.data.push_back(0x0f);
                 expect_mem.data.push_back(0xff);
                 expect_mem.data.push_back(0x0f);
-            }
-            else if (mod.mod == 3)
-            {
-                expect_mem.data.push_back(0xba);
-                expect_mem.data.push_back(0xcd);
+                expect_regs.sp -= 4;
             }
 
             expect_regs.sp += 2;
-            data = {};
+            data = {mod};
             std::copy(test.data.begin(), test.data.end(), std::back_insert_iterator(data));
 
-            TestCase case2{init_regs, expect_regs, expect_mem, cost, loc, {mod}, init_mem, test.loc};
+            TestCase case2{init_regs, expect_regs, expect_mem, cost, loc, data, init_mem, test.loc};
             params.cases.push_back(case2);
             ++mod.rm;
-        } while (mod.rm != 1);
+        } while (mod.rm != 0);
         ++mod.mod;
-    } while (mod.mod != 1);
+    } while (mod.mod != 0);
 
 
     return params;
@@ -390,8 +392,6 @@ TEST_P(PopTests, ProcessCmd)
         std::copy(test.append_cmd.begin(), test.append_cmd.end(), std::back_inserter(cmd));
         bus_.write(address, cmd);
 
-        std::cerr << "Test write to: " << std::hex << test.expect_memory.address
-                  << ", v: " << static_cast<uint16_t>(test.expect_memory.data[0]) << std::endl;
         bus_.write(test.expect_memory.address, test.expect_memory.data);
 
         if (!test.memory_op.data.empty())
