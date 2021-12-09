@@ -22,6 +22,8 @@
 #include <limits>
 #include <type_traits>
 
+#include <iostream>
+
 namespace msemu::cpu8086
 {
 
@@ -74,7 +76,7 @@ private:
     template <uint16_t mask>
     inline static bool get_flag()
     {
-        return r4 & mask;
+        return !!(r4 & mask);
     }
 
     template <uint16_t offset>

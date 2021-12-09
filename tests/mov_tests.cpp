@@ -58,7 +58,7 @@ public:
     std::vector<TestData> data = {};
 };
 
-class MovTests : public TestBase<MovTestsParams>
+class MovTests : public ParametrizedTestBase<MovTestsParams>
 {
 };
 

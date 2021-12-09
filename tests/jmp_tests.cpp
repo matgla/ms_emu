@@ -78,7 +78,7 @@ struct JmpTestsParams
 };
 } // namespace
 
-class JmpTests : public TestBase<JmpTestsParams>
+class JmpTests : public ParametrizedTestBase<JmpTestsParams>
 {
 };
 

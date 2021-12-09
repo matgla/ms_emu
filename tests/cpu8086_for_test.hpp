@@ -77,7 +77,7 @@ struct Registers
     uint16_t ds; // data segment
     uint16_t es; // extra segment
     uint16_t ss; // stack segment
-    struct
+    struct Flags
     {
         uint16_t res_0 : 1;
         uint16_t res_1 : 1;
@@ -105,7 +105,7 @@ class CpuForTest : public Cpu<BusType>
 public:
     using Cpu<BusType>::Cpu;
 
-    void struct_to_reg(const Registers& r)
+    void struct_to_reg(const Registers &r)
     {
         Register::ax(r.ax);
         Register::bx(r.bx);
@@ -120,23 +120,46 @@ public:
         Register::ds(r.ds);
         Register::es(r.es);
         Register::ss(r.ss);
+        Register::flags().ax(r.flags.a);
+        Register::flags().cy(r.flags.c);
+        Register::flags().d(r.flags.d);
+        Register::flags().i(r.flags.i);
+        Register::flags().o(r.flags.o);
+        Register::flags().p(r.flags.p);
+        Register::flags().s(r.flags.s);
+        Register::flags().t(r.flags.t);
+        Register::flags().z(r.flags.z);
     }
 
     Registers reg_to_struct() const
     {
-        return {.ax = Register::ax(),
-                .bx = Register::bx(),
-                .cx = Register::cx(),
-                .dx = Register::dx(),
-                .si = Register::si(),
-                .di = Register::di(),
-                .bp = Register::bp(),
-                .sp = Register::sp(),
-                .ip = Register::ip(),
-                .cs = Register::cs(),
-                .ds = Register::ds(),
-                .es = Register::es(),
-                .ss = Register::ss()};
+        return {
+            .ax = Register::ax(),
+            .bx = Register::bx(),
+            .cx = Register::cx(),
+            .dx = Register::dx(),
+            .si = Register::si(),
+            .di = Register::di(),
+            .bp = Register::bp(),
+            .sp = Register::sp(),
+            .ip = Register::ip(),
+            .cs = Register::cs(),
+            .ds = Register::ds(),
+            .es = Register::es(),
+            .ss = Register::ss(),
+            .flags =
+                {
+                    .o = Register::flags().o(),
+                    .d = Register::flags().d(),
+                    .i = Register::flags().i(),
+                    .t = Register::flags().t(),
+                    .s = Register::flags().s(),
+                    .z = Register::flags().z(),
+                    .a = Register::flags().ax(),
+                    .p = Register::flags().p(),
+                    .c = Register::flags().cy(),
+                },
+        };
     }
 
 
@@ -145,7 +168,7 @@ public:
         return reg_to_struct();
     }
 
-    void set_registers(const Registers& r)
+    void set_registers(const Registers &r)
     {
         struct_to_reg(r);
     }
@@ -166,7 +189,7 @@ public:
     }
 };
 
-inline bool operator==(const Registers& lhs, const Registers& rhs)
+inline bool operator==(const Registers &lhs, const Registers &rhs)
 {
     return lhs.ax == rhs.ax && lhs.bx == rhs.bx && lhs.cx == rhs.cx && lhs.dx == rhs.dx && lhs.si == rhs.si &&
            lhs.di == rhs.di && lhs.bp == rhs.bp && lhs.sp == rhs.sp && lhs.ip == rhs.ip && lhs.cs == rhs.cs &&
@@ -176,7 +199,7 @@ inline bool operator==(const Registers& lhs, const Registers& rhs)
            lhs.flags.p == rhs.flags.p && lhs.flags.c == rhs.flags.c;
 }
 
-inline void PrintTo(const Registers& reg, ::std::ostream* os)
+inline void PrintTo(const Registers &reg, ::std::ostream *os)
 {
     *os << std::endl;
     char line[255];

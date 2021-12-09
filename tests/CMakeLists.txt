@@ -7,6 +7,13 @@ target_sources(msemu_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/cpu8086_for_test.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/test_base.hpp
     PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/aaa_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/aad_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/aam_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/aas_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/adc_tests.cpp
+
+
         ${CMAKE_CURRENT_SOURCE_DIR}/test_base.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/add_tests.cpp

@@ -94,7 +94,7 @@ struct PushTestsParams
     std::string name;
 };
 
-class PushTests : public TestBase<PushTestsParams>
+class PushTests : public ParametrizedTestBase<PushTestsParams>
 {
 };
 

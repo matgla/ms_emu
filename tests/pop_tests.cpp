@@ -375,7 +375,7 @@ PopTestsParams generate_pop_data_modrm(const std::source_location loc = std::sou
 
 } // namespace
 
-class PopTests : public TestBase<PopTestsParams>
+class PopTests : public ParametrizedTestBase<PopTestsParams>
 {
 };
 

@@ -1,0 +1,6 @@
+mov al, 0x00
+aaa
+mov al, 0x05 
+aaa 
+mov al, 0x0a
+aaa 

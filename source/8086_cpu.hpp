@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <bitset>
 #include <cstdint>
 
 #include "16_bit_modrm.hpp"
@@ -32,11 +33,29 @@ namespace msemu
 namespace cpu8086
 {
 
+template <typename T>
+struct ArithmeticType
+{
+};
+
+template <>
+struct ArithmeticType<uint8_t>
+{
+    using type = uint16_t;
+};
+
+template <>
+struct ArithmeticType<uint16_t>
+{
+    using type = uint32_t;
+};
+
+
 template <typename BusType>
 class Cpu
 {
 public:
-    Cpu(BusType& bus)
+    Cpu(BusType &bus)
         : last_instruction_cost_{0}
         , error_msg_{}
         , bus_{bus}
@@ -56,6 +75,17 @@ public:
             set_grp4_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
             set_grp5_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
         }
+
+        // ascii
+        set_opcode(0x37, &Cpu::_aaa);
+        set_opcode(0x3f, &Cpu::_aas);
+        set_opcode(0xd5, &Cpu::_aad);
+        set_opcode(0xd4, &Cpu::_aam);
+
+        // adc
+        set_opcode(0x12, &Cpu::_adc_from_modrm<uint8_t>);
+        set_opcode(0x14, &Cpu::_adc_to_register<uint8_t, Register::al_id>);
+        set_opcode(0x15, &Cpu::_adc_to_register<uint16_t, Register::ax_id>);
 
         // modifiers
         set_opcode(0x26, &Cpu::_set_section_offset<Register::es_id>);
@@ -180,7 +210,7 @@ public:
 
     void step()
     {
-        const auto* op = &opcodes_[bus_.template read<uint8_t>(calculate_code_address())];
+        const auto *op = &opcodes_[bus_.template read<uint8_t>(calculate_code_address())];
         (this->*op->impl)();
 #ifdef DUMP_CORE_STATE
         dump(error_msg_, bus_);
@@ -253,7 +283,7 @@ protected:
         Register::increment_ip(1);
         const ModRM mod = bus_.template read<uint8_t>(calculate_code_address());
         Register::increment_ip(1);
-        const auto* op = &grp5_opcodes_[mod.reg];
+        const auto *op = &grp5_opcodes_[mod.reg];
         (this->*op->impl)(mod);
     }
 
@@ -571,14 +601,179 @@ protected:
     {
         Register::increment_ip(1);
         section_offset_ = reg_id;
-        const auto* op  = &opcodes_[bus_.template read<uint8_t>(calculate_code_address())];
+        const auto *op  = &opcodes_[bus_.template read<uint8_t>(calculate_code_address())];
         (this->*op->impl)();
+    }
+
+    void _aaa()
+    {
+        Register::increment_ip(1);
+        uint8_t al = get_register_8_by_id<Register::al_id>();
+        if ((al & 0x0f) > 9 || Register::flags().ax())
+        {
+            al += 6;
+            const uint8_t ah = get_register_8_by_id<Register::ah_id>();
+            set_register_8_by_id<Register::ah_id>(ah + 1);
+            Register::flags().ax(1);
+            Register::flags().cy(1);
+            set_register_8_by_id<Register::al_id>(al & 0x0f);
+        }
+        else
+        {
+            Register::flags().ax(0);
+            Register::flags().cy(0);
+        }
+        last_instruction_cost_ = 8;
+    }
+
+    void _aas()
+    {
+        Register::increment_ip(1);
+        uint8_t al = get_register_8_by_id<Register::al_id>();
+        if ((al & 0x0f) > 9 || Register::flags().ax())
+        {
+            al               = (al - 6) & 0x0f;
+            const uint8_t ah = get_register_8_by_id<Register::ah_id>();
+            set_register_8_by_id<Register::ah_id>(ah - 1);
+            set_register_8_by_id<Register::al_id>(al);
+            Register::flags().cy(1);
+            Register::flags().ax(1);
+        }
+        else
+        {
+            Register::flags().cy(0);
+            Register::flags().ax(0);
+        }
+        last_instruction_cost_ = 8;
+    }
+
+    template <typename T>
+    inline void set_sign_flag(T op)
+    {
+        Register::flags().s(op & (1 << (sizeof(T) * 8 - 1)));
+    }
+
+    template <typename T>
+    inline void set_zero_flag(T op)
+    {
+        Register::flags().z(op == 0);
+    }
+
+    template <typename T>
+    inline void set_parity_flag(T v)
+    {
+        std::bitset<8> b(v & 0xff);
+        Register::flags().p(b.count() % 2 == 0);
+    }
+
+    template <typename T>
+    inline void set_auxiliary_flag(T src, T dest, T result)
+    {
+        Register::flags().ax((src ^= dest ^ result) & 0x10);
+    }
+
+    void _aad()
+    {
+        Register::increment_ip(2);
+        uint8_t al       = get_register_8_by_id<Register::al_id>();
+        const uint8_t ah = get_register_8_by_id<Register::ah_id>();
+        al               = static_cast<uint8_t>(ah * 10 + al);
+        set_register_8_by_id<Register::al_id>(al);
+        set_register_8_by_id<Register::ah_id>(0);
+
+        set_sign_flag(al);
+        set_zero_flag(al);
+        set_parity_flag(al);
+
+        last_instruction_cost_ = 60;
+    }
+
+    void _aam()
+    {
+        Register::increment_ip(2);
+        uint8_t al       = get_register_8_by_id<Register::al_id>();
+        const uint8_t ah = static_cast<uint8_t>(al / 10);
+        al %= 10;
+        set_register_8_by_id<Register::al_id>(al);
+        set_register_8_by_id<Register::ah_id>(ah);
+
+        set_sign_flag(al);
+        set_zero_flag(al);
+        set_parity_flag(al);
+
+        last_instruction_cost_ = 83;
+    }
+
+    template <typename T>
+    inline void set_carry_flag(T result)
+    {
+        static_assert(std::is_same_v<T, uint16_t> || std::is_same_v<T, uint32_t>,
+                      "Overflow must be checked with higher type than original");
+
+        if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            Register::flags().cy(result & 0xff00);
+        }
+        else if constexpr (std::is_same_v<T, uint32_t>)
+        {
+            Register::flags().cy(result & 0xffff0000);
+        }
+    }
+
+    template <typename T>
+    inline void set_overflow_flag(T result, T original)
+    {
+        if constexpr (std::is_same_v<T, uint8_t>)
+        {
+            Register::flags().o((result ^ original) & 0x80);
+        }
+        else if constexpr (std::is_same_v<T, uint16_t>)
+        {
+            Register::flags().o((result ^ original) & 0x8000);
+        }
+    }
+
+    template <typename T>
+    inline T adc(const T r, const T l)
+    {
+        using Type  = typename ArithmeticType<T>::type;
+        Type result = r + l;
+        result += static_cast<Type>(Register::flags().cy());
+        set_auxiliary_flag(l, r, static_cast<T>(result));
+        set_carry_flag(result);
+        set_overflow_flag(static_cast<T>(result), l);
+        set_sign_flag(static_cast<T>(result));
+        set_parity_flag(static_cast<T>(result));
+        set_zero_flag(static_cast<T>(result));
+        return static_cast<T>(result);
+    }
+
+    template <typename T, uint32_t reg>
+    void _adc_to_register()
+    {
+        Register::increment_ip(1);
+        const T r = bus_.template read<T>(calculate_code_address());
+        Register::increment_ip(1);
+        const T l = get_register_by_id<T, reg>();
+
+        set_register_by_id<T, reg>(adc(r, l));
+        last_instruction_cost_ = 4;
+    }
+
+    template <typename T>
+    void _adc_from_modrm()
+    {
+        Register::increment_ip(1);
+        const auto [offset, mod] = process_modrm();
+        const T l                = get_register_by_id<T>(mod.reg);
+        const T r                = read_modmr<T>(mod, offset);
+        set_register_8_by_id(mod.reg, adc(l, r));
     }
 
     struct MoveOperand
     {
-        uint8_t& from;
-        uint8_t& to;
+        uint8_t &from;
+        uint8_t &to;
     };
 
     struct Instruction
@@ -593,7 +788,7 @@ protected:
         fun impl;
     };
 
-    Instruction* op_;
+    Instruction *op_;
     uint8_t last_instruction_cost_;
     std::optional<uint8_t> section_offset_;
     char error_msg_[100];
@@ -604,7 +799,7 @@ protected:
     static inline ExtraInstruction grp3b_opcodes_[8];
     static inline ExtraInstruction grp4_opcodes_[8];
     static inline ExtraInstruction grp5_opcodes_[8];
-    BusType& bus_;
+    BusType &bus_;
 };
 
 } // namespace cpu8086
