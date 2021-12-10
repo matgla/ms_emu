@@ -31,12 +31,14 @@
 namespace msemu::cpu8086
 {
 
+using MemoryType  = Device<Memory<1024 * 128>, 0x00000000>;
+using BiosRomType = Device<Memory<1024 * 64>, 0x000ffff0>;
+using BusType     = Bus<MemoryType, BiosRomType>;
+using CpuType     = cpu8086::CpuForTest<BusType>;
+
 template <typename TestData>
 class ParametrizedTestBase : public ::testing::TestWithParam<TestData>
 {
-    using MemoryType  = Device<Memory<1024 * 128>, 0x00000000>;
-    using BiosRomType = Device<Memory<1024 * 64>, 0x000ffff0>;
-
 public:
     ParametrizedTestBase()
         : bus_(MemoryType("flash"), BiosRomType("bios/rom"))
@@ -44,17 +46,14 @@ public:
     {
     }
 
+
 protected:
-    using BusType = Bus<MemoryType, BiosRomType>;
     BusType bus_;
     cpu8086::CpuForTest<BusType> sut_;
 };
 
 class TestBase : public ::testing::Test
 {
-    using MemoryType  = Device<Memory<1024 * 128>, 0x00000000>;
-    using BiosRomType = Device<Memory<1024 * 64>, 0x000ffff0>;
-
 public:
     TestBase()
         : bus_(MemoryType("flash"), BiosRomType("bios/rom"))
@@ -70,7 +69,7 @@ protected:
 
 
 template <typename T>
-inline std::string generate_test_case_name(const ::testing::TestParamInfo<T>& info)
+inline std::string generate_test_case_name(const ::testing::TestParamInfo<T> &info)
 {
     return info.param.name;
 }

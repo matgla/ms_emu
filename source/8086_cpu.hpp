@@ -84,6 +84,7 @@ public:
 
         // adc
         set_opcode(0x12, &Cpu::_adc_from_modrm<uint8_t>);
+        set_opcode(0x13, &Cpu::_adc_from_modrm<uint16_t>);
         set_opcode(0x14, &Cpu::_adc_to_register<uint8_t, Register::al_id>);
         set_opcode(0x15, &Cpu::_adc_to_register<uint16_t, Register::ax_id>);
 
@@ -385,7 +386,8 @@ protected:
         if (mod.mod < 3)
         {
             const auto from_address = calculate_memory_address(mod, offset);
-            last_instruction_cost_  = static_cast<uint8_t>(mem_cost + modes.costs[mod.mod][mod.rm]);
+            std::cerr << "Reading from: " << from_address << std::endl;
+            last_instruction_cost_ = static_cast<uint8_t>(mem_cost + modes.costs[mod.mod][mod.rm]);
             return bus_.template read<T>(from_address);
         }
 
@@ -734,7 +736,7 @@ protected:
     }
 
     template <typename T>
-    inline T adc(const T r, const T l)
+    inline T adc(const T l, const T r)
     {
         using Type  = typename ArithmeticType<T>::type;
         Type result = r + l;
@@ -756,7 +758,7 @@ protected:
         Register::increment_ip(1);
         const T l = get_register_by_id<T, reg>();
 
-        set_register_by_id<T, reg>(adc(r, l));
+        set_register_by_id<T, reg>(adc(l, r));
         last_instruction_cost_ = 4;
     }
 
@@ -767,7 +769,10 @@ protected:
         const auto [offset, mod] = process_modrm();
         const T l                = get_register_by_id<T>(mod.reg);
         const T r                = read_modmr<T>(mod, offset);
-        set_register_8_by_id(mod.reg, adc(l, r));
+
+        std::cerr << "L: " << std::hex << static_cast<uint16_t>(l) << ", R: " << static_cast<uint16_t>(r)
+                  << std::endl;
+        set_register_by_id(mod.reg, adc(l, r));
     }
 
     struct MoveOperand
