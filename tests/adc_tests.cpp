@@ -418,7 +418,16 @@ AdcTestsParams generate_modrm_to_reg16()
                         regs_expect.flags                 = data.flags;
                         if (mod.reg == mod.rm)
                         {
+                            // Danger, this may broke parity flag, so we need to fix it
                             uint16_t part = static_cast<uint16_t>((data.op0 + data.op1) / 2);
+                            if (std::bitset<8>(static_cast<uint8_t>(part + part)).count() % 2 == 0)
+                            {
+                                regs_expect.flags.p = true;
+                            }
+                            else
+                            {
+                                regs_expect.flags.p = false;
+                            }
                             regs_init.*reg16_mapping[mod.reg]  = part;
                             regs_expect.*reg16_mapping[mod.rm] = static_cast<uint16_t>(part * 2);
                             if (regs_init.flags.c)
@@ -533,6 +542,7 @@ TEST_P(AdcTests, ProcessCmd)
         for (const auto &data : test.values)
         {
             command = {param.cmd};
+
             test.init_reg(data, regs_init, expected, bus_, command);
             sut_.set_registers(regs_init);
             const uint32_t address =
