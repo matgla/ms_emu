@@ -68,13 +68,21 @@ public:
 
         for (uint16_t i = 0; i < 8; ++i)
         {
-            set_grp1_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp1_0_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp1_1_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
+            set_grp1_3_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
             set_grp2_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
             set_grp3a_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
             set_grp3b_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
             set_grp4_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
             set_grp5_opcode(static_cast<uint8_t>(i), &Cpu::_unimpl_extra);
         }
+        // grp
+        set_opcode(0x80, &Cpu::_grp1_0_process);
+        set_opcode(0x81, &Cpu::_grp1_1_process);
+        set_opcode(0x82, &Cpu::_grp1_0_process);
+        set_opcode(0x83, &Cpu::_grp1_3_process);
+        set_opcode(0xff, &Cpu::_grp5_process);
 
         // ascii
         set_opcode(0x37, &Cpu::_aaa);
@@ -87,6 +95,9 @@ public:
         set_opcode(0x13, &Cpu::_adc_from_modrm<uint16_t>);
         set_opcode(0x14, &Cpu::_adc_to_register<uint8_t, Register::al_id>);
         set_opcode(0x15, &Cpu::_adc_to_register<uint16_t, Register::ax_id>);
+        set_grp1_0_opcode(0x02, &Cpu::_adc_modrm_imm<uint8_t, uint8_t>);
+        set_grp1_1_opcode(0x02, &Cpu::_adc_modrm_imm<uint16_t, uint16_t>);
+        set_grp1_3_opcode(0x02, &Cpu::_adc_modrm_imm<uint16_t, uint8_t>);
 
         // modifiers
         set_opcode(0x26, &Cpu::_set_section_offset<Register::es_id>);
@@ -175,7 +186,6 @@ public:
 
         set_opcode(0xfc, &Cpu::_cld);
 
-        set_opcode(0xff, &Cpu::_grp5_process);
         set_opcode(0xc3, &Cpu::_unimpl);
 
         reset();
@@ -230,10 +240,21 @@ protected:
         opcodes_[id].impl = fun;
     }
 
-    void set_grp1_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    void set_grp1_0_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
     {
-        grp1_opcodes_[id].impl = fun;
+        grp1_0_opcodes_[id].impl = fun;
     }
+
+    void set_grp1_1_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp1_1_opcodes_[id].impl = fun;
+    }
+
+    void set_grp1_3_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
+    {
+        grp1_3_opcodes_[id].impl = fun;
+    }
+
 
     void set_grp2_opcode(const uint8_t id, void (Cpu::*fun)(const ModRM))
     {
@@ -287,6 +308,33 @@ protected:
         const auto *op = &grp5_opcodes_[mod.reg];
         (this->*op->impl)(mod);
     }
+
+    void _grp1_0_process()
+    {
+        Register::increment_ip(1);
+        const ModRM mod = bus_.template read<uint8_t>(calculate_code_address());
+        Register::increment_ip(1);
+        const auto *op = &grp1_0_opcodes_[mod.reg];
+        (this->*op->impl)(mod);
+    }
+    void _grp1_1_process()
+    {
+        Register::increment_ip(1);
+        const ModRM mod = bus_.template read<uint8_t>(calculate_code_address());
+        Register::increment_ip(1);
+        const auto *op = &grp1_1_opcodes_[mod.reg];
+        (this->*op->impl)(mod);
+    }
+
+    void _grp1_3_process()
+    {
+        Register::increment_ip(1);
+        const ModRM mod = bus_.template read<uint8_t>(calculate_code_address());
+        Register::increment_ip(1);
+        const auto *op = &grp1_3_opcodes_[mod.reg];
+        (this->*op->impl)(mod);
+    }
+
 
     template <typename T>
     void _jump_short()
@@ -386,8 +434,7 @@ protected:
         if (mod.mod < 3)
         {
             const auto from_address = calculate_memory_address(mod, offset);
-            std::cerr << "Reading from: " << from_address << std::endl;
-            last_instruction_cost_ = static_cast<uint8_t>(mem_cost + modes.costs[mod.mod][mod.rm]);
+            last_instruction_cost_  = static_cast<uint8_t>(mem_cost + modes.costs[mod.mod][mod.rm]);
             return bus_.template read<T>(from_address);
         }
 
@@ -740,6 +787,8 @@ protected:
     {
         using Type  = typename ArithmeticType<T>::type;
         Type result = r + l;
+        std::cerr << "L: " << std::hex << static_cast<uint16_t>(l) << ", r: " << static_cast<uint16_t>(r)
+                  << ", result: " << static_cast<uint16_t>(result) << std::endl;
         result += static_cast<Type>(Register::flags().cy());
         set_auxiliary_flag(l, r, static_cast<T>(result));
         set_carry_flag(result);
@@ -755,7 +804,7 @@ protected:
     {
         Register::increment_ip(1);
         const T r = bus_.template read<T>(calculate_code_address());
-        Register::increment_ip(1);
+        Register::increment_ip(sizeof(T));
         const T l = get_register_by_id<T, reg>();
 
         set_register_by_id<T, reg>(adc(l, r));
@@ -770,9 +819,18 @@ protected:
         const T l                = get_register_by_id<T>(mod.reg);
         const T r                = read_modmr<T>(mod, offset);
 
-        std::cerr << "L: " << std::hex << static_cast<uint16_t>(l) << ", R: " << static_cast<uint16_t>(r)
-                  << std::endl;
         set_register_by_id(mod.reg, adc(l, r));
+    }
+
+    template <typename T, typename ImmType>
+    void _adc_modrm_imm(const ModRM mod)
+    {
+        const uint16_t offset = process_modrm(mod);
+        const T l             = read_modmr<T>(mod, offset);
+        const T r             = bus_.template read<ImmType>(calculate_code_address());
+        Register::increment_ip(sizeof(ImmType));
+
+        write_modmr<T>(mod, offset, adc(l, r));
     }
 
     struct MoveOperand
@@ -798,7 +856,9 @@ protected:
     std::optional<uint8_t> section_offset_;
     char error_msg_[100];
     static inline Instruction opcodes_[256];
-    static inline ExtraInstruction grp1_opcodes_[8];
+    static inline ExtraInstruction grp1_0_opcodes_[8];
+    static inline ExtraInstruction grp1_1_opcodes_[8];
+    static inline ExtraInstruction grp1_3_opcodes_[8];
     static inline ExtraInstruction grp2_opcodes_[8];
     static inline ExtraInstruction grp3a_opcodes_[8];
     static inline ExtraInstruction grp3b_opcodes_[8];

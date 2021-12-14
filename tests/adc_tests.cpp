@@ -29,17 +29,31 @@ namespace msemu::cpu8086
 namespace
 {
 
+struct MemoryOp
+{
+    MemoryOp() = default;
+    MemoryOp(uint32_t addr, const std::vector<uint8_t> &data)
+        : address(addr)
+        , data(data)
+    {
+    }
+    uint32_t address          = 0;
+    std::vector<uint8_t> data = {};
+};
+
 struct TestData
 {
 public:
     struct Values
     {
         Values(uint16_t o1, uint16_t o2, uint16_t result, Registers::Flags flags,
+               MemoryOp expect_memory_         = {},
                const std::source_location &loc = std::source_location::current())
             : op0(o1)
             , op1(o2)
             , result(result)
             , flags(flags)
+            , expect_memory(expect_memory_)
             , loc(loc)
         {
         }
@@ -48,6 +62,7 @@ public:
         uint16_t op1;
         uint16_t result;
         Registers::Flags flags;
+        MemoryOp expect_memory = {};
         std::source_location loc;
     };
 
@@ -63,7 +78,7 @@ private:
     }
 
 public:
-    static TestData for_byte(const Setter &setter)
+    static TestData for_byte(const Setter &setter) noexcept
     {
         return TestData(
             {
@@ -76,7 +91,7 @@ public:
             true, setter);
     }
 
-    static TestData for_word(const Setter &setter)
+    static TestData for_word(const Setter &setter) noexcept
     {
         return TestData(
             {
@@ -89,6 +104,18 @@ public:
             false, setter);
     }
 
+    static TestData for_word_imm_byte(const Setter &setter) noexcept
+    {
+        return TestData(
+            {
+                Values{0x7ff8, 0x0060, 0x8058, Registers::Flags{.o = true, .s = true}},
+                Values{0xffff, 0x0001, 0x0000,
+                       Registers::Flags{.o = true, .z = true, .a = true, .p = true, .c = true}},
+                Values{0x0000, 0x0001, 0x0002, Registers::Flags{}},
+                Values{0xf124, 0x0010, 0xf134, Registers::Flags{.s = true}},
+            },
+            false, setter);
+    }
     std::vector<Values> values;
     bool is_byte;
     Setter init_reg;
@@ -123,7 +150,7 @@ std::vector<uint16_t Registers::*> reg16_mapping = {&Registers::ax, &Registers::
 
 using RegisterInitializers = std::vector<std::vector<uint16_t Registers::*>>;
 
-RegisterInitializers mod8_to_reg_0 = {
+RegisterInitializers mod_to_reg_0 = {
     {&Registers::bx, &Registers::si},
     {&Registers::bx, &Registers::di},
     {&Registers::bp, &Registers::si},
@@ -134,7 +161,7 @@ RegisterInitializers mod8_to_reg_0 = {
     {&Registers::bx},
 };
 
-RegisterInitializers mod8_to_reg_1 = {
+RegisterInitializers mod_to_reg_1 = {
     {&Registers::bx, &Registers::si},
     {&Registers::bx, &Registers::di},
     {&Registers::bp, &Registers::si},
@@ -146,9 +173,10 @@ RegisterInitializers mod8_to_reg_1 = {
 };
 
 
-std::vector<RegisterInitializers> mod8_to_reg_inits = {
-    mod8_to_reg_0, mod8_to_reg_1, mod8_to_reg_1,
-    // mod8_to_reg_3,
+std::vector<RegisterInitializers> mod_to_reg_inits = {
+    mod_to_reg_0,
+    mod_to_reg_1,
+    mod_to_reg_1,
 };
 
 
@@ -170,7 +198,7 @@ AdcTestsParams generate_modrm_to_reg8()
                           BusType &bus, std::vector<uint8_t> &command)
                     {
                         regs_init.*reg8_mapping[mod.reg] = static_cast<uint8_t>(data.op0);
-                        const auto &reg_to_inits         = mod8_to_reg_inits[mod.mod][mod.rm];
+                        const auto &reg_to_inits         = mod_to_reg_inits[mod.mod][mod.rm];
                         uint32_t address                 = 0x1020;
                         if (reg_to_inits.size() == 1)
                         {
@@ -322,7 +350,7 @@ AdcTestsParams generate_modrm_to_reg16()
                           BusType &bus, std::vector<uint8_t> &command)
                     {
                         regs_init.*reg16_mapping[mod.reg] = data.op0;
-                        const auto &reg_to_inits          = mod8_to_reg_inits[mod.mod][mod.rm];
+                        const auto &reg_to_inits          = mod_to_reg_inits[mod.mod][mod.rm];
                         uint32_t address                  = 0x1020;
                         if (reg_to_inits.size() == 1)
                         {
@@ -420,7 +448,10 @@ AdcTestsParams generate_modrm_to_reg16()
                         {
                             // Danger, this may broke parity flag, so we need to fix it
                             uint16_t part = static_cast<uint16_t>((data.op0 + data.op1) / 2);
-                            if (std::bitset<8>(static_cast<uint8_t>(part + part)).count() % 2 == 0)
+                            if (std::bitset<8>(static_cast<uint8_t>(part + part + regs_init.flags.c))
+                                        .count() %
+                                    2 ==
+                                0)
                             {
                                 regs_expect.flags.p = true;
                             }
@@ -434,7 +465,7 @@ AdcTestsParams generate_modrm_to_reg16()
                             {
                                 regs_expect.*reg16_mapping[mod.rm] += 1;
                             }
-                            if (part != 0x7a)
+                            if (part != 0x789a) // this TC breaks flags checks
                             {
                                 regs_expect.flags.a = false;
                             }
@@ -464,6 +495,146 @@ AdcTestsParams generate_modrm_to_reg16()
     return param;
 }
 
+template <typename T, typename ImmType>
+auto generate_test_data(auto lambda)
+{
+    if constexpr (std::is_same_v<T, uint16_t> && std::is_same_v<ImmType, uint8_t>)
+    {
+        return TestData::for_word_imm_byte(lambda);
+    }
+    if constexpr (std::is_same_v<T, uint8_t>)
+    {
+        return TestData::for_byte(lambda);
+    }
+    return TestData::for_word(lambda);
+}
+
+template <typename RMType, typename IType, uint8_t cmd>
+AdcTestsParams generate_imm_to_modrm()
+{
+    std::vector<TestData> tests = {};
+    ModRM mod                   = 0;
+    mod.reg                     = 2;
+    do
+    {
+        mod.rm = 0;
+        do
+        {
+            auto test = generate_test_data<RMType, IType>(
+                [mod](const TestData::Values &data, Registers &regs_init, Registers &regs_expect,
+                      BusType &bus, std::vector<uint8_t> &command)
+                {
+                    const auto regs_to_inits = mod_to_reg_inits[mod.mod][mod.rm];
+                    command.push_back(mod);
+                    uint32_t address = 0x1020;
+
+                    if (regs_to_inits.size() == 1)
+                    {
+                        (regs_init.*regs_to_inits[0]) = 0x1020;
+                    }
+                    else if (regs_to_inits.size() == 2)
+                    {
+                        (regs_init.*regs_to_inits[0]) = 0x0610;
+                        (regs_init.*regs_to_inits[1]) = 0x0a10;
+                    }
+
+                    regs_expect = regs_init;
+                    if (mod.mod == 0 && mod.rm == 6)
+                    {
+                        command.push_back(0x20);
+                        command.push_back(0x10);
+                        regs_expect.ip += 4 + sizeof(IType);
+                    }
+                    else if (mod.mod == 1)
+                    {
+                        address += 0x20;
+                        command.push_back(0x20);
+                        regs_expect.ip += 3 + sizeof(IType);
+                    }
+                    else if (mod.mod == 2)
+                    {
+                        command.push_back(0x20);
+                        command.push_back(0x10);
+                        regs_expect.ip += 4 + sizeof(IType);
+                        address += 0x1020;
+                    }
+                    else
+                    {
+                        regs_expect.ip += 2 + sizeof(IType);
+                    }
+
+                    if constexpr (std::is_same_v<uint8_t, IType>)
+                    {
+                        command.push_back(static_cast<uint8_t>(data.op1));
+                    }
+                    else
+                    {
+                        command.push_back(static_cast<uint8_t>(data.op1));
+                        command.push_back(static_cast<uint8_t>(data.op1 >> 8));
+                    }
+                    bus.write(address, data.op0);
+                    regs_expect.flags = data.flags;
+                });
+            tests.push_back(test);
+            ++mod.rm;
+        } while (mod.rm != 0);
+        ++mod.mod;
+    } while (mod.mod != 3);
+
+    mod.rm  = 0;
+    mod.mod = 3;
+    do
+    {
+        auto test = generate_test_data<RMType, IType>(
+            [mod](const TestData::Values &data, Registers &regs_init, Registers &regs_expect, BusType &bus,
+                  std::vector<uint8_t> &command)
+            {
+                static_cast<void>(bus);
+                if constexpr (std::is_same_v<uint8_t, RMType>)
+                {
+                    regs_init.*reg8_mapping[mod.rm] = static_cast<uint8_t>(data.op0);
+                }
+                else
+                {
+                    regs_init.*reg16_mapping[mod.rm] = data.op0;
+                }
+                command.push_back(mod);
+
+                regs_expect = regs_init;
+
+                if constexpr (std::is_same_v<uint8_t, RMType>)
+                {
+                    regs_expect.*reg8_mapping[mod.rm] = static_cast<uint8_t>(data.result);
+                }
+                else
+                {
+                    regs_expect.*reg16_mapping[mod.rm] = data.result;
+                }
+
+                if constexpr (std::is_same_v<uint8_t, IType>)
+                {
+                    regs_expect.ip += 3;
+                    command.push_back(static_cast<uint8_t>(data.op1));
+                }
+                else
+                {
+                    regs_expect.ip += 4;
+                    command.push_back(static_cast<uint8_t>(data.op1));
+                    command.push_back(static_cast<uint8_t>(data.op1 >> 8));
+                }
+
+                regs_expect.flags = data.flags;
+            });
+        tests.push_back(test);
+        ++mod.rm;
+
+    } while (mod.rm != 0);
+
+    std::stringstream name;
+    name << std::hex << "0x" << static_cast<uint32_t>(cmd) << "_2";
+    AdcTestsParams param(cmd, tests, name.str());
+    return param;
+}
 
 auto get_adc_test_parameters()
 {
@@ -490,13 +661,14 @@ auto get_adc_test_parameters()
                                regs_init.ax   = data.op0;
                                regs_expect    = regs_init;
                                regs_expect.ax = data.result;
-                               regs_expect.ip += 2;
+                               regs_expect.ip += 3;
                                regs_expect.flags = data.flags;
                                command.push_back(static_cast<uint8_t>(data.op1));
                                command.push_back(static_cast<uint8_t>(data.op1 >> 8));
                            })},
                        "0x15"),
-        generate_modrm_to_reg8(), generate_modrm_to_reg16());
+        generate_modrm_to_reg8(), generate_modrm_to_reg16(), generate_imm_to_modrm<uint8_t, uint8_t, 0x80>(),
+        generate_imm_to_modrm<uint16_t, uint16_t, 0x81>(), generate_imm_to_modrm<uint16_t, uint8_t, 0x83>());
 }
 
 void stringify_array(const auto &data, auto &str)
@@ -553,6 +725,15 @@ TEST_P(AdcTests, ProcessCmd)
             EXPECT_EQ(sut_.get_registers(), expected)
                 << print_test_case_info(sut_.get_error(), data, param, command);
             regs_init = sut_.get_registers();
+            EXPECT_TRUE(sut_.get_error().empty())
+                << print_test_case_info(sut_.get_error(), data, param, command);
+
+            if (data.expect_memory.data.size())
+            {
+                std::vector<uint8_t> from_memory(data.expect_memory.data.size());
+                bus_.read(data.expect_memory.address, from_memory);
+                EXPECT_THAT(from_memory, ::testing::ElementsAreArray(data.expect_memory.data));
+            }
         }
     }
 }
